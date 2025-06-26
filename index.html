@@ -662,19 +662,22 @@
             // 更新日時を日本時間に変換して設定
             const updateDateElement = document.getElementById('update-date');
             if (updateDateElement) {
+                // stockData.generated_atが既にUTC時間の文字列なので、そのままDateオブジェクトに変換
                 const utcDate = new Date(stockData.generated_at);
-                // UTC時間に9時間を加えて日本時間に変換
-                const jstDate = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000));
-                const formattedDate = jstDate.toLocaleString('ja-JP', {
+                
+                // 日本時間で表示（Intl.DateTimeFormatを使用してより正確に）
+                const jstDate = new Intl.DateTimeFormat('ja-JP', {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit',
                     hour: '2-digit',
                     minute: '2-digit',
                     second: '2-digit',
-                    timeZone: 'Asia/Tokyo'
-                }) + ' JST';
-                updateDateElement.textContent = formattedDate;
+                    timeZone: 'Asia/Tokyo',
+                    hour12: false
+                }).format(utcDate);
+                
+                updateDateElement.textContent = `${jstDate} JST`;
             }
 
             // NASDAQ-100のデータを更新
