@@ -3,7 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>米国株 TOP銘柄ランキング - US Stock Rankings</title>
+    <title>米国株 TOP銘柄ランキング | NASDAQ100・S&P500 毎日更新 | stock-ranking.com</title>
+    <meta name="description" content="NASDAQ100とS&P500の優良銘柄ランキングを毎日更新。段階的フィルタリングで選出されたULTRA TOP5と過去30日の履歴を公開。">
+    <meta name="keywords" content="米国株,ランキング,NASDAQ100,S&P500,株価,銘柄,投資,TOP5,ULTRA,履歴,銘柄選択,投資判断,アルゴリズム,データ分析,株式投資,資産運用,投資情報">
+    <meta name="author" content="シバイヌおやびん">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="米国株 TOP銘柄ランキング | stock-ranking.com">
+    <meta property="og:description" content="NASDAQ100とS&P500の優良銘柄ランキングを毎日更新。段階的フィルタリングで選出されたULTRA TOP5と過去30日の履歴を公開。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://stock-ranking.com">
+    <meta property="og:site_name" content="stock-ranking.com">
+    <meta property="og:image" content="https://stock-ranking.com/og-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="米国株 TOP銘柄ランキング | stock-ranking.com">
+    <meta name="twitter:description" content="NASDAQ100とS&P500の優良銘柄ランキングを毎日更新。段階的フィルタリングで選出されたULTRA TOP5と過去30日の履歴を公開。">
+    <meta name="twitter:creator" content="@yasutakettin">
+    <meta name="twitter:image" content="https://stock-ranking.com/og-image.png">
+    <link rel="canonical" href="https://stock-ranking.com">
+    
+    <!-- パフォーマンス最適化 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    
+    <!-- 構造化データ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "stock-ranking.com",
+      "description": "米国株TOP銘柄ランキング - NASDAQ100とS&P500の優良銘柄を毎日更新",
+      "url": "https://stock-ranking.com",
+      "author": {
+        "@type": "Person",
+        "name": "シバイヌおやびん",
+        "sameAs": "https://x.com/yasutakettin"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "stock-ranking.com"
+      },
+      "mainEntity": {
+        "@type": "Dataset",
+        "name": "米国株TOP銘柄ランキング",
+        "description": "NASDAQ100とS&P500の段階的フィルタリングによる優良銘柄ランキング",
+        "keywords": "米国株,NASDAQ100,S&P500,銘柄ランキング,投資",
+        "temporalCoverage": "毎日更新",
+        "spatial": "アメリカ合衆国証券市場"
+      }
+    }
+    </script>
+    
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "ランキングはどのように決定されますか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "12ヶ月、6ヶ月、3ヶ月、1ヶ月の複数期間リターンを段階的に分析し、長期的な成長性と直近のモメンタムを兼ね備えた銘柄を選出しています。"
+          }
+        },
+        {
+          "@type": "Question", 
+          "name": "更新頻度はどの程度ですか？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "毎営業日の朝7:00（日本時間）に自動更新されます。最新の株価データに基づいて常に最新のランキングを提供しています。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "ULTRA TOP5とは何ですか？",
+          "acceptedAnswer": {
+            "@type": "Answer", 
+            "text": "TOP10銘柄の中から、さらに直近1ヶ月のリターンが最も高い5銘柄をULTRA TOP5として選出しています。長期的な成長性と短期的なモメンタムを兼ね備えた最優秀銘柄です。"
+          }
+        }
+      ]
+    }
+    </script>
     <style>
         * {
             margin: 0;
@@ -81,6 +162,41 @@
         .author-info a:hover {
             color: #60a5fa;
             text-decoration: underline;
+        }
+
+        /* Share Button */
+        .share-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .share-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #000000, #1a1a1a);
+            color: white;
+            text-decoration: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            border: 1px solid #333;
+        }
+
+        .share-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+            color: white;
+            text-decoration: none;
+        }
+
+        .share-icon {
+            font-size: 1.1rem;
+            font-weight: 700;
         }
 
         .update-schedule {
@@ -240,6 +356,145 @@
         @media (max-width: 1024px) {
             .main-grid {
                 grid-template-columns: 1fr;
+            }
+        }
+
+        /* モバイル最適化 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .header .subtitle {
+                font-size: 1.2rem;
+            }
+            
+            .update-schedule {
+                font-size: 0.8rem;
+                padding: 5px 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .algorithm-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .faq-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* タッチターゲット最適化 */
+        .ranking-row {
+            padding: 18px 20px;
+            display: grid;
+            grid-template-columns: 60px 1fr;
+            gap: 20px;
+            align-items: center;
+            border-bottom: 1px solid rgba(75, 85, 99, 0.2);
+            transition: all 0.3s ease;
+            min-height: 44px; /* タップしやすいサイズ */
+            cursor: pointer;
+        }
+
+        .share-button,
+        .history-button {
+            min-height: 44px;
+            touch-action: manipulation; /* ダブルタップズーム無効化 */
+        }
+
+        /* ローディング状態 */
+        .loading-skeleton {
+            background: rgba(31, 41, 55, 0.6);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 10px 0;
+        }
+
+        .skeleton-item {
+            height: 20px;
+            background: linear-gradient(90deg, rgba(55, 65, 81, 0.3) 25%, rgba(75, 85, 99, 0.5) 50%, rgba(55, 65, 81, 0.3) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: 4px;
+            margin: 8px 0;
+        }
+
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* エラー状態 */
+        .error-state {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            color: #ef4444;
+            margin: 20px 0;
+        }
+
+        .error-state h3 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #ef4444;
+        }
+
+        .retry-button {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 44px;
+        }
+
+        .retry-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+        }
+
+        /* フォーカス表示改善 */
+        .share-button:focus,
+        .history-button:focus,
+        .close-button:focus,
+        .retry-button:focus {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+
+        /* 高コントラスト対応 */
+        @media (prefers-contrast: high) {
+            .ranking-row {
+                border: 2px solid #ffffff;
+            }
+            
+            .share-button,
+            .history-button {
+                border: 2px solid #ffffff;
+            }
+        }
+
+        /* アニメーション無効化対応 */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
             }
         }
 
@@ -573,6 +828,65 @@
         .feature-item strong {
             color: #10b981;
         }
+
+        /* FAQ Section */
+        .faq-section {
+            margin: 60px 0;
+            background: rgba(17, 24, 39, 0.6);
+            border-radius: 20px;
+            padding: 40px;
+            border: 1px solid rgba(55, 65, 81, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        .faq-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .faq-header h2 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .faq-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .faq-item {
+            background: rgba(31, 41, 55, 0.8);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(75, 85, 99, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .faq-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .faq-item h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .faq-item p {
+            color: #d1d5db;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
     </style>
 </head>
 <body>
@@ -580,89 +894,129 @@
         <!-- Header -->
         <div class="header">
             <h1>米国株 TOP銘柄ランキング</h1>
-            <div class="subtitle">US Stock Rankings</div>
+            <div class="subtitle">stock-ranking.com</div>
             <div class="update-info">
                 <div class="pulse-dot"></div>
                 <div class="update-schedule">📅 毎営業日 朝7:00 JST更新</div>
             </div>
         </div>
 
-        <!-- History Section -->
-        <div class="history-section">
-            <button class="history-button" onclick="showHistory()">
-                📊 過去30日のランキング履歴を見る
-            </button>
+        <!-- Share Section -->
+        <div class="share-section">
+            <a href="#" class="share-button" onclick="shareToX(); return false;" 
+               aria-label="Xでサイトをシェアする">
+                <span class="share-icon">𝕏</span>
+                <span>Xでシェア</span>
+            </a>
         </div>
 
         <!-- Main Content -->
-        <div class="main-grid">
-            <!-- NASDAQ-100 Section -->
-            <div class="index-section">
-                <div class="index-header">
-                    <div class="index-indicator nasdaq-indicator"></div>
-                    <div class="index-title">🟢 NASDAQ-100</div>
-                </div>
+        <main role="main">
+            <div class="main-grid">
+                <!-- NASDAQ-100 Section -->
+                <section class="index-section" aria-labelledby="nasdaq-title">
+                    <div class="index-header">
+                        <div class="index-indicator nasdaq-indicator"></div>
+                        <h2 id="nasdaq-title" class="index-title">🟢 NASDAQ-100</h2>
+                    </div>
 
-                <div class="ranking-section">
-                    <div class="section-title">⭐ ULTRA TOP 5</div>
-                    <div class="ranking-table">
-                        <div class="table-header">
-                            <div>Rank</div>
-                            <div>Symbol</div>
-                        </div>
-                        <div id="nasdaq-ultra-top5">
-                            <!-- JavaScriptで動的に生成 -->
+                    <div class="ranking-section">
+                        <h3 class="section-title">⭐ ULTRA TOP 5</h3>
+                        <div class="ranking-table">
+                            <div class="table-header">
+                                <div>Rank</div>
+                                <div>Symbol</div>
+                            </div>
+                            <div id="nasdaq-ultra-top5" role="list" aria-label="NASDAQ100 ULTRA TOP5ランキング">
+                                <!-- ローディング状態 -->
+                                <div class="loading-skeleton">
+                                    <div class="skeleton-item"></div>
+                                    <div class="skeleton-item"></div>
+                                    <div class="skeleton-item"></div>
+                                    <div class="skeleton-item"></div>
+                                    <div class="skeleton-item"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="ranking-section">
-                    <div class="section-title">🏆 TOP 10</div>
-                    <div class="ranking-table">
-                        <div class="table-header">
-                            <div>Rank</div>
-                            <div>Symbol</div>
-                        </div>
-                        <div id="nasdaq-top10">
-                            <!-- JavaScriptで動的に生成 -->
+                    <div class="ranking-section">
+                        <h3 class="section-title">🏆 TOP 10</h3>
+                        <div class="ranking-table">
+                            <div class="table-header">
+                                <div>Rank</div>
+                                <div>Symbol</div>
+                            </div>
+                            <div id="nasdaq-top10" role="list" aria-label="NASDAQ100 TOP10ランキング">
+                                <!-- ローディング状態 -->
+                                <div class="loading-skeleton">
+                                    <div class="skeleton-item"></div>
+                                    <div class="skeleton-item"></div>
+                                    <div class="skeleton-item"></div>
+                                    <div class="skeleton-item"></div>
+                                    <div class="skeleton-item"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </section>
+
+                <!-- S&P 500 Section -->
+                <section class="index-section" aria-labelledby="sp500-title">
+                    <div class="index-header">
+                        <div class="index-indicator sp500-indicator"></div>
+                        <h2 id="sp500-title" class="index-title">🔵 S&P 500</h2>
+                    </div>
+
+                    <div class="ranking-section">
+                        <h3 class="section-title">⭐ ULTRA TOP 5</h3>
+                        <div class="ranking-table">
+                            <div class="table-header">
+                                <div>Rank</div>
+                                <div>Symbol</div>
+                            </div>
+                            <div id="sp500-ultra-top5" role="list" aria-label="S&P500 ULTRA TOP5ランキング">
+                                <!-- ローディング状態 -->
+                                <div class="loading-skeleton">
+                                    <div class="skeleton-item"></div>
+                                    <div class="skeleton-item"></div>
+                                    <div class="skeleton-item"></div>
+                                    <div class="skeleton-item"></div>
+                                    <div class="skeleton-item"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ranking-section">
+                        <h3 class="section-title">🏆 TOP 10</h3>
+                        <div class="ranking-table">
+                            <div class="table-header">
+                                <div>Rank</div>
+                                <div>Symbol</div>
+                            </div>
+                            <div id="sp500-top10" role="list" aria-label="S&P500 TOP10ランキング">
+                                <!-- ローディング状態 -->
+                                <div class="loading-skeleton">
+                                    <div class="skeleton-item"></div>
+                                    <div class="skeleton-item"></div>
+                                    <div class="skeleton-item"></div>
+                                    <div class="skeleton-item"></div>
+                                    <div class="skeleton-item"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
+        </main>
 
-            <!-- S&P 500 Section -->
-            <div class="index-section">
-                <div class="index-header">
-                    <div class="index-indicator sp500-indicator"></div>
-                    <div class="index-title">🔵 S&P 500</div>
-                </div>
-
-                <div class="ranking-section">
-                    <div class="section-title">⭐ ULTRA TOP 5</div>
-                    <div class="ranking-table">
-                        <div class="table-header">
-                            <div>Rank</div>
-                            <div>Symbol</div>
-                        </div>
-                        <div id="sp500-ultra-top5">
-                            <!-- JavaScriptで動的に生成 -->
-                        </div>
-                    </div>
-                </div>
-
-                <div class="ranking-section">
-                    <div class="section-title">🏆 TOP 10</div>
-                    <div class="ranking-table">
-                        <div class="table-header">
-                            <div>Rank</div>
-                            <div>Symbol</div>
-                        </div>
-                        <div id="sp500-top10">
-                            <!-- JavaScriptで動的に生成 -->
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <!-- History Section -->
+        <div class="history-section">
+            <button class="history-button" onclick="showHistory()" 
+                    aria-label="過去30日間のランキング履歴を表示する">
+                📊 過去30日のランキング履歴を見る
+            </button>
         </div>
 
         <!-- History Modal -->
@@ -682,7 +1036,7 @@
         <div class="algorithm-section">
             <div class="algorithm-header">
                 <h2>🧠 銘柄選出アルゴリズム</h2>
-                <p>独自の段階的フィルタリングシステムで優良銘柄を抽出</p>
+                <p>段階的フィルタリングシステムで優良銘柄を抽出</p>
             </div>
             
             <div class="algorithm-grid">
@@ -744,6 +1098,35 @@
                             <span><strong>履歴管理</strong>：過去30日のランキング変動を記録・表示</span>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ Section -->
+        <div class="faq-section">
+            <div class="faq-header">
+                <h2>💡 よくある質問</h2>
+            </div>
+            
+            <div class="faq-grid">
+                <div class="faq-item">
+                    <h3>🤔 ランキングはどのように決定されますか？</h3>
+                    <p>12ヶ月、6ヶ月、3ヶ月、1ヶ月の複数期間リターンを段階的に分析し、長期的な成長性と直近のモメンタムを兼ね備えた銘柄を選出しています。</p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>⏰ 更新頻度はどの程度ですか？</h3>
+                    <p>毎営業日の朝7:00（日本時間）に自動更新されます。最新の株価データに基づいて常に最新のランキングを提供しています。</p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>⭐ ULTRA TOP5とは何ですか？</h3>
+                    <p>TOP10銘柄の中から、さらに直近1ヶ月のリターンが最も高い5銘柄をULTRA TOP5として選出しています。長期的な成長性と短期的なモメンタムを兼ね備えた最優秀銘柄です。</p>
+                </div>
+
+                <div class="faq-item">
+                    <h3>📊 過去の履歴も確認できますか？</h3>
+                    <p>はい、過去30日間のランキング履歴を確認できます。日々の変動やトレンドの変化を把握して、より良い投資判断にお役立てください。</p>
                 </div>
             </div>
         </div>
@@ -811,25 +1194,29 @@
         // エラー表示関数
         function showError(message) {
             const errorDiv = document.createElement('div');
-            errorDiv.className = 'error-message';
+            errorDiv.className = 'error-state';
             errorDiv.innerHTML = `
-                <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); 
-                     border-radius: 8px; padding: 20px; margin: 20px 0; color: #ef4444;">
-                    <strong>⚠️ ${message}</strong>
-                    <p style="margin-top: 10px; font-size: 0.9rem; color: #fca5a5;">
-                        解決方法：<br>
-                        1. stock_ranking.py を実行してJSONファイルを生成<br>
-                        2. HTMLファイルと同じフォルダにdataフォルダがあることを確認<br>
-                        3. ブラウザのコンソール（F12）でエラー詳細を確認
-                    </p>
-                </div>
+                <h3>⚠️ ${message}</h3>
+                <p>データの読み込みに失敗しました。しばらく待ってから再度お試しください。</p>
+                <button class="retry-button" onclick="loadStockData(); this.parentElement.remove();">
+                    🔄 再試行
+                </button>
             `;
-            document.querySelector('.container').insertBefore(errorDiv, document.querySelector('.main-grid'));
+            document.querySelector('.container').insertBefore(errorDiv, document.querySelector('main'));
+        }
+
+        // ローディング状態を削除する関数
+        function removeLoadingStates() {
+            const loadingElements = document.querySelectorAll('.loading-skeleton');
+            loadingElements.forEach(element => element.remove());
         }
 
         // 表示更新関数
         function updateDisplay() {
             if (!stockData) return;
+
+            // ローディング状態を削除
+            removeLoadingStates();
 
             // NASDAQ-100のデータを更新
             if (stockData.nasdaq100) {
@@ -851,8 +1238,8 @@
             const container = document.getElementById(containerId);
             if (!container || !symbols || symbols.length === 0) return;
 
-            // 既存のランキング行を削除
-            const existingRows = container.querySelectorAll('.ranking-row');
+            // 既存のランキング行とローディング状態を削除
+            const existingRows = container.querySelectorAll('.ranking-row, .loading-skeleton');
             existingRows.forEach(row => row.remove());
 
             // 新しいランキング行を追加
@@ -866,19 +1253,31 @@
         function createRankingRow(symbol, rank, isUltraTop = false) {
             const row = document.createElement('div');
             row.className = `ranking-row ${isUltraTop ? 'ultra-row' : ''}`;
+            row.setAttribute('role', 'listitem');
+            row.setAttribute('tabindex', '0');
+            row.setAttribute('aria-label', `${rank}位: ${symbol}`);
             
             const badgeClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'default';
             
             row.innerHTML = `
-                <div class="rank-badge ${badgeClass}">${rank}</div>
+                <div class="rank-badge ${badgeClass}" aria-label="${rank}位">${rank}</div>
                 <div class="ticker-symbol">
                     ${symbol}
                     ${isUltraTop ? '<span class="ultra-badge">ULTRA</span>' : ''}
                 </div>
             `;
 
+            // キーボードアクセシビリティ
+            row.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    console.log(`${symbol} がキーボードで選択されました`);
+                    // 将来的に株価詳細表示機能を追加予定
+                }
+            });
+
             // クリックイベントを追加
-            row.querySelector('.ticker-symbol').addEventListener('click', function() {
+            row.addEventListener('click', function() {
                 console.log(`${symbol} がクリックされました`);
                 // 将来的に株価詳細表示機能を追加予定
             });
@@ -962,6 +1361,17 @@
                 loadStockData();
             }, 2000);
         });
+
+        // X共有機能
+        function shareToX() {
+            const url = 'https://stock-ranking.com';
+            const text = '🇺🇸 米国株TOP銘柄ランキング\n\n📊 NASDAQ100・S&P500の優良銘柄を毎日更新！\n⭐ ULTRA TOP5 + 過去30日履歴\n🤖 段階的フィルタリングで自動選出\n\n';
+            const hashtags = '米国株,投資,NASDAQ,SP500,ランキング';
+            
+            const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}&hashtags=${encodeURIComponent(hashtags)}&via=yasutakettin`;
+            
+            window.open(shareUrl, '_blank', 'width=600,height=400');
+        }
     </script>
 </body>
 </html>
