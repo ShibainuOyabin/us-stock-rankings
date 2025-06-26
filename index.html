@@ -25,6 +25,22 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
     
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8XL0V905HL"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-8XL0V905HL', {
+        // プライバシー設定
+        anonymize_ip: true,
+        // カスタムイベント設定
+        custom_map: {
+          'custom_parameter_1': 'ranking_view'
+        }
+      });
+    </script>
+    
     <!-- 構造化データ -->
     <script type="application/ld+json">
     {
@@ -1271,6 +1287,16 @@
             row.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
+                    
+                    // Google Analytics イベント追跡
+                    if (typeof gtag !== 'undefined') {
+                        gtag('event', 'select_content', {
+                            content_type: 'stock_symbol',
+                            content_id: symbol,
+                            method: 'keyboard'
+                        });
+                    }
+                    
                     console.log(`${symbol} がキーボードで選択されました`);
                     // 将来的に株価詳細表示機能を追加予定
                 }
@@ -1278,6 +1304,15 @@
 
             // クリックイベントを追加
             row.addEventListener('click', function() {
+                // Google Analytics イベント追跡
+                if (typeof gtag !== 'undefined') {
+                    gtag('event', 'select_content', {
+                        content_type: 'stock_symbol',
+                        content_id: symbol,
+                        method: 'click'
+                    });
+                }
+                
                 console.log(`${symbol} がクリックされました`);
                 // 将来的に株価詳細表示機能を追加予定
             });
