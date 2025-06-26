@@ -63,6 +63,26 @@
             flex-wrap: wrap;
         }
 
+        .author-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .author-info a {
+            color: #3b82f6;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .author-info a:hover {
+            color: #60a5fa;
+            text-decoration: underline;
+        }
+
         .update-schedule {
             background: rgba(15, 118, 110, 0.08);
             border: 1px solid rgba(15, 118, 110, 0.2);
@@ -730,12 +750,9 @@
 
         <!-- Footer -->
         <div class="footer">
-            <div class="footer-content">
-                <span>© 2025 US Stock Rankings</span>
-                <div class="footer-dot"></div>
-                <span>Powered by Python & GitHub Actions</span>
-                <div class="footer-dot"></div>
-                <span>Auto-updated daily</span>
+            <div class="author-info">
+                <span>© 2025 シバイヌおやびん</span>
+                <span>📧 <a href="https://x.com/yasutakettin" target="_blank">@yasutakettin</a></span>
             </div>
         </div>
     </div>
