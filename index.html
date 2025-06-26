@@ -13,8 +13,8 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 50%, #0c0c0c 100%);
-            color: #ffffff;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+            color: #1e293b;
             min-height: 100vh;
             line-height: 1.6;
         }
@@ -29,53 +29,54 @@
         .header {
             text-align: center;
             padding: 40px 0;
-            background: linear-gradient(135deg, rgba(29, 78, 216, 0.1), rgba(147, 51, 234, 0.1));
-            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(30, 58, 138, 0.03), rgba(67, 56, 202, 0.03));
+            border-radius: 16px;
             margin-bottom: 40px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
         }
 
         .header h1 {
-            font-size: 3.5rem;
+            font-size: 3.2rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            background: linear-gradient(135deg, #1e40af, #4338ca);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
 
         .header .subtitle {
-            font-size: 1.5rem;
-            color: #d1d5db;
-            margin-bottom: 20px;
+            font-size: 1.4rem;
+            color: #64748b;
+            margin-bottom: 24px;
+            font-weight: 500;
         }
 
         .update-info {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 12px;
             font-size: 0.9rem;
-            color: #9ca3af;
+            color: #475569;
             flex-wrap: wrap;
         }
 
         .update-schedule {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 8px;
-            padding: 8px 12px;
-            color: #10b981;
-            font-weight: 500;
-            margin-left: 15px;
+            background: rgba(15, 118, 110, 0.08);
+            border: 1px solid rgba(15, 118, 110, 0.2);
+            border-radius: 6px;
+            padding: 6px 12px;
+            color: #0f766e;
+            font-weight: 600;
+            font-size: 0.85rem;
         }
 
         .pulse-dot {
             width: 8px;
             height: 8px;
-            background: #10b981;
+            background: #0f766e;
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
@@ -445,7 +446,7 @@
             <div class="subtitle">US Stock Rankings</div>
             <div class="update-info">
                 <div class="pulse-dot"></div>
-                <span>Last Updated: <span id="update-date">2025-06-30 12:00:00 UTC</span></span>
+                <span>Last Updated: <span id="update-date">2025-06-30 21:00:00 JST</span></span>
                 <div class="update-schedule">📅 毎営業日 朝7:00 JST更新</div>
             </div>
         </div>
@@ -658,10 +659,22 @@
         function updateDisplay() {
             if (!stockData) return;
 
-            // 更新日時を設定
+            // 更新日時を日本時間に変換して設定
             const updateDateElement = document.getElementById('update-date');
             if (updateDateElement) {
-                updateDateElement.textContent = stockData.generated_at;
+                const utcDate = new Date(stockData.generated_at);
+                // UTC時間に9時間を加えて日本時間に変換
+                const jstDate = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000));
+                const formattedDate = jstDate.toLocaleString('ja-JP', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    timeZone: 'Asia/Tokyo'
+                }) + ' JST';
+                updateDateElement.textContent = formattedDate;
             }
 
             // NASDAQ-100のデータを更新
