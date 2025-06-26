@@ -1,12 +1,13 @@
 # 統合株価ランキングシステム（Webサービス用）
-# NQ100 + S&P500両方対応、JSON出力対応版
+# NQ100 + S&P500両方対応、JSON出力対応版 + 履歴管理機能
 
 import pandas as pd
 import yfinance as yf
 import numpy as np
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
+from collections import OrderedDict
 
 # テスト実行用フラグ
 TEST_MODE = False  # 本格実行モード（全銘柄データ）
@@ -131,12 +132,126 @@ def process_stock_data(symbols, index_name):
         print(f"{index_name} 処理エラー: {e}")
         return None
 
+def load_history():
+    """既存の履歴データを読み込み"""
+    history_file = "data/rankings_history.json"
+    
+    if os.path.exists(history_file):
+        try:
+            with open(history_file, "r", encoding="utf-8") as f:
+                history = json.load(f)
+            print(f"📚 既存履歴データ読み込み: {len(history)}日分")
+            return history
+        except Exception as e:
+            print(f"履歴データ読み込みエラー: {e}")
+            return {}
+    else:
+        print("📚 新規履歴データファイルを作成します")
+        return {}
+
+def update_history(history, nasdaq_result, sp500_result):
+    """履歴データを更新（過去30日分を保持）"""
+    today = datetime.now().strftime("%Y-%m-%d")
+    
+    # 今日のデータを追加
+    history[today] = {
+        "nasdaq100": {
+            "ultra_top_5": nasdaq_result["ultra_top_5"] if nasdaq_result else [],
+            "top_10": nasdaq_result["top_10"] if nasdaq_result else []
+        },
+        "sp500": {
+            "ultra_top_5": sp500_result["ultra_top_5"] if sp500_result else [],
+            "top_10": sp500_result["top_10"] if sp500_result else []
+        }
+    }
+    
+    # 日付でソートし、新しい順に並べる
+    sorted_dates = sorted(history.keys(), reverse=True)
+    
+    # 過去30日分のみ保持
+    if len(sorted_dates) > 30:
+        dates_to_keep = sorted_dates[:30]
+        history = {date: history[date] for date in dates_to_keep}
+        print(f"📅 履歴データを30日分に制限: {len(dates_to_keep)}日分保持")
+    
+    return history
+
+def save_history(history):
+    """履歴データをファイルに保存"""
+    history_file = "data/rankings_history.json"
+    
+    try:
+        # 日付順にソート（OrderedDictを使用して順序を保持）
+        sorted_history = OrderedDict(sorted(history.items(), reverse=True))
+        
+        with open(history_file, "w", encoding="utf-8") as f:
+            json.dump(sorted_history, f, indent=2, ensure_ascii=False)
+        
+        print(f"📚 履歴データ保存完了: {len(sorted_history)}日分")
+        
+        # 履歴の統計情報を表示
+        if sorted_history:
+            oldest_date = min(sorted_history.keys())
+            newest_date = max(sorted_history.keys())
+            print(f"📊 履歴期間: {oldest_date} ～ {newest_date}")
+        
+    except Exception as e:
+        print(f"履歴データ保存エラー: {e}")
+
+def analyze_ranking_changes(history):
+    """ランキング変動を分析（オプション機能）"""
+    if len(history) < 2:
+        return
+    
+    dates = sorted(history.keys(), reverse=True)
+    today = dates[0]
+    yesterday = dates[1] if len(dates) > 1 else None
+    
+    if not yesterday:
+        return
+    
+    print(f"\n📈 ランキング変動分析 ({yesterday} → {today})")
+    print("-" * 50)
+    
+    # NASDAQ100の変動
+    if history[today]["nasdaq100"]["ultra_top_5"] and history[yesterday]["nasdaq100"]["ultra_top_5"]:
+        today_nasdaq = history[today]["nasdaq100"]["ultra_top_5"]
+        yesterday_nasdaq = history[yesterday]["nasdaq100"]["ultra_top_5"]
+        
+        print("🟢 NASDAQ100 ULTRA TOP5変動:")
+        for i, (today_stock, yesterday_stock) in enumerate(zip(today_nasdaq, yesterday_nasdaq), 1):
+            if today_stock != yesterday_stock:
+                print(f"  {i}位: {yesterday_stock} → {today_stock} 🔄")
+            else:
+                print(f"  {i}位: {today_stock} (変動なし)")
+    
+    # S&P500の変動
+    if history[today]["sp500"]["ultra_top_5"] and history[yesterday]["sp500"]["ultra_top_5"]:
+        today_sp500 = history[today]["sp500"]["ultra_top_5"]
+        yesterday_sp500 = history[yesterday]["sp500"]["ultra_top_5"]
+        
+        print("\n🔵 S&P500 ULTRA TOP5変動:")
+        for i, (today_stock, yesterday_stock) in enumerate(zip(today_sp500, yesterday_sp500), 1):
+            if today_stock != yesterday_stock:
+                print(f"  {i}位: {yesterday_stock} → {today_stock} 🔄")
+            else:
+                print(f"  {i}位: {today_stock} (変動なし)")
+
 def main():
     """メイン処理"""
     print("=== 統合株価ランキングシステム開始 ===")
     
     if TEST_MODE:
         print("🧪 テストモード実行中（少数銘柄で動作確認）")
+    
+    # dataディレクトリ作成
+    output_dir = "data"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        print(f"📁 {output_dir}ディレクトリを作成しました")
+    
+    # 履歴データを読み込み
+    history = load_history()
     
     # 両指数のデータを取得・処理
     nasdaq_symbols, _ = get_nasdaq100_symbols()
@@ -145,7 +260,16 @@ def main():
     nasdaq_result = process_stock_data(nasdaq_symbols, "NASDAQ-100")
     sp500_result = process_stock_data(sp500_symbols, "S&P 500")
     
-    # 結果をまとめる
+    # 履歴データを更新
+    history = update_history(history, nasdaq_result, sp500_result)
+    
+    # 履歴データを保存
+    save_history(history)
+    
+    # ランキング変動分析（オプション）
+    analyze_ranking_changes(history)
+    
+    # 現在のランキングデータをまとめる
     final_result = {
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC"),
         "test_mode": TEST_MODE,
@@ -153,11 +277,7 @@ def main():
         "sp500": sp500_result
     }
     
-    # JSONファイルとして保存
-    output_dir = "data"
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    
+    # 現在のランキングJSONファイルとして保存
     filename = "stock_rankings_test.json" if TEST_MODE else "stock_rankings.json"
     with open(f"{output_dir}/{filename}", "w", encoding="utf-8") as f:
         json.dump(final_result, f, indent=2, ensure_ascii=False)
@@ -188,7 +308,8 @@ def main():
             print(f"  {i}. {ticker}")
     
     print("\n" + "="*60)
-    print("🎯 テスト完了！")
+    print("🎯 実行完了！")
+    print(f"📚 履歴データ: {len(history)}日分保存済み")
     if TEST_MODE:
         print("💡 本番実行時は TEST_MODE = False に変更してください")
     
