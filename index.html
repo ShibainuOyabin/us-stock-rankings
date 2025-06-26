@@ -86,6 +86,129 @@
             50% { opacity: 0.5; }
         }
 
+        /* History Button */
+        .history-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .history-button {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .history-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        /* History Modal */
+        .history-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .history-modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .history-content {
+            background: rgba(17, 24, 39, 0.95);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 90vw;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid rgba(55, 65, 81, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(75, 85, 99, 0.3);
+        }
+
+        .history-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .close-button {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .close-button:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .history-day {
+            background: rgba(31, 41, 55, 0.8);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(75, 85, 99, 0.4);
+        }
+
+        .history-day-header {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .history-rankings {
+            font-size: 0.9rem;
+            color: #d1d5db;
+            line-height: 1.8;
+        }
+
+        .history-rankings .rank {
+            display: inline-block;
+            width: 25px;
+            color: #9ca3af;
+        }
+
+        .history-rankings .symbol {
+            font-weight: 600;
+            color: #ffffff;
+        }
+
         /* Main Grid */
         .main-grid {
             display: grid;
@@ -144,12 +267,6 @@
             font-size: 1.8rem;
             font-weight: 700;
             color: #ffffff;
-        }
-
-        .last-updated {
-            margin-left: auto;
-            font-size: 0.85rem;
-            color: #9ca3af;
         }
 
         /* Ranking Section */
@@ -446,9 +563,15 @@
             <div class="subtitle">US Stock Rankings</div>
             <div class="update-info">
                 <div class="pulse-dot"></div>
-                <span>Last Updated: <span id="update-date">2025-06-30 21:00:00 JST</span></span>
                 <div class="update-schedule">📅 毎営業日 朝7:00 JST更新</div>
             </div>
+        </div>
+
+        <!-- History Section -->
+        <div class="history-section">
+            <button class="history-button" onclick="showHistory()">
+                📊 過去30日のランキング履歴を見る
+            </button>
         </div>
 
         <!-- Main Content -->
@@ -458,7 +581,6 @@
                 <div class="index-header">
                     <div class="index-indicator nasdaq-indicator"></div>
                     <div class="index-title">🟢 NASDAQ-100</div>
-                    <div class="last-updated">Updated: 2025-06-30</div>
                 </div>
 
                 <div class="ranking-section">
@@ -493,7 +615,6 @@
                 <div class="index-header">
                     <div class="index-indicator sp500-indicator"></div>
                     <div class="index-title">🔵 S&P 500</div>
-                    <div class="last-updated">Updated: 2025-06-30</div>
                 </div>
 
                 <div class="ranking-section">
@@ -520,6 +641,19 @@
                             <!-- JavaScriptで動的に生成 -->
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Modal -->
+        <div id="historyModal" class="history-modal">
+            <div class="history-content">
+                <div class="history-header">
+                    <div class="history-title">📊 過去30日のランキング履歴</div>
+                    <button class="close-button" onclick="hideHistory()">×</button>
+                </div>
+                <div id="historyContent">
+                    <!-- JavaScriptで動的に生成 -->
                 </div>
             </div>
         </div>
@@ -585,6 +719,10 @@
                             <span class="feature-icon">🔄</span>
                             <span><strong>毎営業日更新</strong>：毎朝7:00（日本時間）に最新データで自動更新</span>
                         </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">📈</span>
+                            <span><strong>履歴管理</strong>：過去30日のランキング変動を記録・表示</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -605,13 +743,14 @@
     <script>
         // JSONデータ読み込み機能
         let stockData = null;
+        let historyData = null;
 
         // JSONファイルからデータを読み込む関数
         async function loadStockData() {
             try {
                 console.log('JSONファイルを読み込み中...');
                 
-                // 本番用とテスト用のファイル名を試行（本番優先）
+                // 現在のランキングデータを読み込み
                 const filenames = ['data/stock_rankings.json', 'data/stock_rankings_test.json'];
                 
                 for (let filename of filenames) {
@@ -621,18 +760,34 @@
                             stockData = await response.json();
                             console.log('データ読み込み成功:', filename);
                             updateDisplay();
-                            return;
+                            break;
                         }
                     } catch (e) {
                         console.log(`${filename} の読み込みに失敗:`, e.message);
                     }
                 }
                 
-                throw new Error('JSONファイルが見つかりません');
+                // 履歴データを読み込み
+                await loadHistoryData();
                 
             } catch (error) {
                 console.error('データ読み込みエラー:', error);
                 showError('データの読み込みに失敗しました。Pythonスクリプトを実行してJSONファイルを生成してください。');
+            }
+        }
+
+        // 履歴データ読み込み関数
+        async function loadHistoryData() {
+            try {
+                const response = await fetch('data/rankings_history.json');
+                if (response.ok) {
+                    historyData = await response.json();
+                    console.log('履歴データ読み込み成功');
+                } else {
+                    console.log('履歴データが見つかりません（初回実行時は正常です）');
+                }
+            } catch (error) {
+                console.log('履歴データ読み込みエラー:', error.message);
             }
         }
 
@@ -659,39 +814,16 @@
         function updateDisplay() {
             if (!stockData) return;
 
-            // 更新日時を日本時間に変換して設定
-            const updateDateElement = document.getElementById('update-date');
-            if (updateDateElement) {
-                // stockData.generated_atが既にUTC時間の文字列なので、そのままDateオブジェクトに変換
-                const utcDate = new Date(stockData.generated_at);
-                
-                // 日本時間で表示（Intl.DateTimeFormatを使用してより正確に）
-                const jstDate = new Intl.DateTimeFormat('ja-JP', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    timeZone: 'Asia/Tokyo',
-                    hour12: false
-                }).format(utcDate);
-                
-                updateDateElement.textContent = `${jstDate} JST`;
-            }
-
             // NASDAQ-100のデータを更新
             if (stockData.nasdaq100) {
                 updateRankingTable('nasdaq-top10', stockData.nasdaq100.top_10);
                 updateRankingTable('nasdaq-ultra-top5', stockData.nasdaq100.ultra_top_5, true);
-                updateLastUpdated('nasdaq', stockData.nasdaq100.last_updated);
             }
 
             // S&P 500のデータを更新
             if (stockData.sp500) {
                 updateRankingTable('sp500-top10', stockData.sp500.top_10);
                 updateRankingTable('sp500-ultra-top5', stockData.sp500.ultra_top_5, true);
-                updateLastUpdated('sp500', stockData.sp500.last_updated);
             }
 
             console.log('表示更新完了');
@@ -737,40 +869,81 @@
             return row;
         }
 
-        // 更新日時設定関数
-        function updateLastUpdated(indexType, date) {
-            const elements = document.querySelectorAll(`.${indexType === 'nasdaq' ? 'nasdaq' : 'sp500'}-indicator`);
-            elements.forEach(el => {
-                const parent = el.closest('.index-header');
-                if (parent) {
-                    const lastUpdatedEl = parent.querySelector('.last-updated');
-                    if (lastUpdatedEl) {
-                        lastUpdatedEl.textContent = `Updated: ${date}`;
-                    }
-                }
+        // 履歴表示関数
+        function showHistory() {
+            if (!historyData) {
+                alert('履歴データが利用できません。数日後に再度お試しください。');
+                return;
+            }
+
+            const modal = document.getElementById('historyModal');
+            const content = document.getElementById('historyContent');
+            
+            // 履歴データを日付順にソート（新しい順）
+            const sortedDates = Object.keys(historyData).sort((a, b) => new Date(b) - new Date(a));
+            
+            let historyHtml = '<div class="history-grid">';
+            
+            sortedDates.slice(0, 30).forEach(date => {
+                const dayData = historyData[date];
+                const dateObj = new Date(date);
+                const formattedDate = dateObj.toLocaleDateString('ja-JP', {
+                    month: 'short',
+                    day: 'numeric',
+                    weekday: 'short'
+                });
+                
+                historyHtml += `
+                    <div class="history-day">
+                        <div class="history-day-header">${formattedDate}</div>
+                        <div class="history-rankings">
+                            <strong>NASDAQ TOP5:</strong><br>
+                            ${dayData.nasdaq100 ? dayData.nasdaq100.ultra_top_5.map((symbol, i) => 
+                                `<span class="rank">${i+1}.</span><span class="symbol">${symbol}</span>`
+                            ).join('<br>') : 'データなし'}
+                            <br><br>
+                            <strong>S&P500 TOP5:</strong><br>
+                            ${dayData.sp500 ? dayData.sp500.ultra_top_5.map((symbol, i) => 
+                                `<span class="rank">${i+1}.</span><span class="symbol">${symbol}</span>`
+                            ).join('<br>') : 'データなし'}
+                        </div>
+                    </div>
+                `;
             });
+            
+            historyHtml += '</div>';
+            content.innerHTML = historyHtml;
+            modal.classList.add('show');
         }
+
+        // 履歴非表示関数
+        function hideHistory() {
+            const modal = document.getElementById('historyModal');
+            modal.classList.remove('show');
+        }
+
+        // モーダル外クリックで閉じる
+        document.getElementById('historyModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideHistory();
+            }
+        });
+
+        // ESCキーで閉じる
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                hideHistory();
+            }
+        });
 
         // DOM読み込み完了時にデータ読み込みを開始
         document.addEventListener('DOMContentLoaded', function() {
             console.log('US Stock Rankings サイトが読み込まれました');
             
-            // 5秒後にJSONファイルを読み込み（サンプルデータを少し見せるため）
+            // 2秒後にJSONファイルを読み込み
             setTimeout(() => {
                 loadStockData();
             }, 2000);
-            
-            // 手動読み込みボタンを追加（デバッグ用）
-            const debugButton = document.createElement('button');
-            debugButton.textContent = '🔄 データ再読み込み';
-            debugButton.style.cssText = `
-                position: fixed; top: 20px; right: 20px; z-index: 1000;
-                background: linear-gradient(135deg, #10b981, #059669);
-                color: white; border: none; padding: 10px 15px;
-                border-radius: 8px; cursor: pointer; font-weight: 600;
-            `;
-            debugButton.addEventListener('click', loadStockData);
-            document.body.appendChild(debugButton);
         });
     </script>
 </body>
