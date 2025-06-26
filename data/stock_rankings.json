@@ -1,0 +1,52 @@
+{
+  "generated_at": "2025-06-26 14:31:37 UTC",
+  "test_mode": false,
+  "nasdaq100": {
+    "index_name": "NASDAQ-100",
+    "last_updated": "2025-06-30",
+    "top_10": [
+      "AVGO",
+      "ZS",
+      "AXON",
+      "NVDA",
+      "CRWD",
+      "NFLX",
+      "MSTR",
+      "KLAC",
+      "MSFT",
+      "MELI"
+    ],
+    "ultra_top_5": [
+      "KLAC",
+      "NVDA",
+      "ZS",
+      "AVGO",
+      "MSFT"
+    ],
+    "total_stocks_processed": 93
+  },
+  "sp500": {
+    "index_name": "S&P 500",
+    "last_updated": "2025-06-30",
+    "top_10": [
+      "NRG",
+      "VST",
+      "JBL",
+      "ORCL",
+      "AXON",
+      "APH",
+      "PWR",
+      "RCL",
+      "NFLX",
+      "HWM"
+    ],
+    "ultra_top_5": [
+      "JBL",
+      "ORCL",
+      "VST",
+      "RCL",
+      "PWR"
+    ],
+    "total_stocks_processed": 476
+  }
+}

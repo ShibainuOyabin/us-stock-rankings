@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>米国株 TOP銘柄ランキング - US Stock Rankings</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 50%, #0c0c0c 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 40px 0;
+            background: linear-gradient(135deg, rgba(29, 78, 216, 0.1), rgba(147, 51, 234, 0.1));
+            border-radius: 20px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            font-size: 1.5rem;
+            color: #d1d5db;
+            margin-bottom: 20px;
+        }
+
+        .update-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: #9ca3af;
+            flex-wrap: wrap;
+        }
+
+        .update-schedule {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: #10b981;
+            font-weight: 500;
+            margin-left: 15px;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Index Section */
+        .index-section {
+            background: rgba(17, 24, 39, 0.8);
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid rgba(55, 65, 81, 0.5);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .index-section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .index-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(75, 85, 99, 0.3);
+        }
+
+        .index-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .nasdaq-indicator {
+            background: #10b981;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .sp500-indicator {
+            background: #3b82f6;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .index-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .last-updated {
+            margin-left: auto;
+            font-size: 0.85rem;
+            color: #9ca3af;
+        }
+
+        /* Ranking Section */
+        .ranking-section {
+            margin-bottom: 35px;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #f3f4f6;
+        }
+
+        .ranking-table {
+            background: rgba(31, 41, 55, 0.6);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(75, 85, 99, 0.3);
+        }
+
+        .table-header {
+            background: linear-gradient(135deg, rgba(55, 65, 81, 0.8), rgba(75, 85, 99, 0.6));
+            padding: 15px 20px;
+            display: grid;
+            grid-template-columns: 60px 1fr;
+            gap: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #d1d5db;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .ranking-row {
+            padding: 18px 20px;
+            display: grid;
+            grid-template-columns: 60px 1fr;
+            gap: 20px;
+            align-items: center;
+            border-bottom: 1px solid rgba(75, 85, 99, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .ranking-row:hover {
+            background: rgba(55, 65, 81, 0.4);
+            transform: translateX(5px);
+        }
+
+        .ranking-row:last-child {
+            border-bottom: none;
+        }
+
+        .ultra-row {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.1));
+            border-left: 4px solid #f59e0b;
+        }
+
+        .rank-badge {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .rank-badge.gold {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #000;
+            box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
+        }
+
+        .rank-badge.silver {
+            background: linear-gradient(135deg, #e5e7eb, #9ca3af);
+            color: #000;
+            box-shadow: 0 4px 15px rgba(156, 163, 175, 0.3);
+        }
+
+        .rank-badge.bronze {
+            background: linear-gradient(135deg, #d97506, #92400e);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
+        }
+
+        .rank-badge.default {
+            background: linear-gradient(135deg, #4b5563, #374151);
+            color: #fff;
+        }
+
+        .ticker-symbol {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #ffffff;
+            transition: color 0.3s ease;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ticker-symbol:hover {
+            color: #60a5fa;
+        }
+
+        .ultra-badge {
+            background: linear-gradient(135deg, #f59e0b, #d97506);
+            color: #000;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px 0;
+            margin-top: 60px;
+            border-top: 1px solid rgba(75, 85, 99, 0.3);
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        .footer-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .footer-dot {
+            width: 4px;
+            height: 4px;
+            background: #60a5fa;
+            border-radius: 50%;
+        }
+
+        /* Algorithm Section */
+        .algorithm-section {
+            margin: 60px 0;
+            background: rgba(17, 24, 39, 0.6);
+            border-radius: 20px;
+            padding: 40px;
+            border: 1px solid rgba(55, 65, 81, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        .algorithm-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .algorithm-header h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #10b981, #059669);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .algorithm-header p {
+            font-size: 1.2rem;
+            color: #d1d5db;
+        }
+
+        .algorithm-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .algorithm-card {
+            background: rgba(31, 41, 55, 0.8);
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid rgba(75, 85, 99, 0.4);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .algorithm-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #10b981, #059669);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .algorithm-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(16, 185, 129, 0.1);
+        }
+
+        .algorithm-card:hover::before {
+            opacity: 1;
+        }
+
+        .step-number {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #000;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .step-content h3 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 15px;
+        }
+
+        .step-content p {
+            color: #d1d5db;
+            line-height: 1.7;
+            font-size: 1rem;
+        }
+
+        .step-content strong {
+            color: #10b981;
+            font-weight: 600;
+        }
+
+        .algorithm-summary {
+            margin-top: 40px;
+        }
+
+        .summary-box {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .summary-box h4 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #d1d5db;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .feature-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .feature-item strong {
+            color: #10b981;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>米国株 TOP銘柄ランキング</h1>
+            <div class="subtitle">US Stock Rankings</div>
+            <div class="update-info">
+                <div class="pulse-dot"></div>
+                <span>Last Updated: <span id="update-date">2025-06-30 12:00:00 UTC</span></span>
+                <div class="update-schedule">📅 毎営業日 朝7:00 JST更新</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-grid">
+            <!-- NASDAQ-100 Section -->
+            <div class="index-section">
+                <div class="index-header">
+                    <div class="index-indicator nasdaq-indicator"></div>
+                    <div class="index-title">🟢 NASDAQ-100</div>
+                    <div class="last-updated">Updated: 2025-06-30</div>
+                </div>
+
+                <div class="ranking-section">
+                    <div class="section-title">⭐ ULTRA TOP 5</div>
+                    <div class="ranking-table">
+                        <div class="table-header">
+                            <div>Rank</div>
+                            <div>Symbol</div>
+                        </div>
+                        <div id="nasdaq-ultra-top5">
+                            <!-- JavaScriptで動的に生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ranking-section">
+                    <div class="section-title">🏆 TOP 10</div>
+                    <div class="ranking-table">
+                        <div class="table-header">
+                            <div>Rank</div>
+                            <div>Symbol</div>
+                        </div>
+                        <div id="nasdaq-top10">
+                            <!-- JavaScriptで動的に生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- S&P 500 Section -->
+            <div class="index-section">
+                <div class="index-header">
+                    <div class="index-indicator sp500-indicator"></div>
+                    <div class="index-title">🔵 S&P 500</div>
+                    <div class="last-updated">Updated: 2025-06-30</div>
+                </div>
+
+                <div class="ranking-section">
+                    <div class="section-title">⭐ ULTRA TOP 5</div>
+                    <div class="ranking-table">
+                        <div class="table-header">
+                            <div>Rank</div>
+                            <div>Symbol</div>
+                        </div>
+                        <div id="sp500-ultra-top5">
+                            <!-- JavaScriptで動的に生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ranking-section">
+                    <div class="section-title">🏆 TOP 10</div>
+                    <div class="ranking-table">
+                        <div class="table-header">
+                            <div>Rank</div>
+                            <div>Symbol</div>
+                        </div>
+                        <div id="sp500-top10">
+                            <!-- JavaScriptで動的に生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Algorithm Explanation -->
+        <div class="algorithm-section">
+            <div class="algorithm-header">
+                <h2>🧠 銘柄選出アルゴリズム</h2>
+                <p>独自の段階的フィルタリングシステムで優良銘柄を抽出</p>
+            </div>
+            
+            <div class="algorithm-grid">
+                <div class="algorithm-card">
+                    <div class="step-number">01</div>
+                    <div class="step-content">
+                        <h3>📊 基本データ収集</h3>
+                        <p>2020年1月から現在までの全銘柄の<strong>月次終値データ</strong>を収集。株式分割調整済みの正確な価格データを使用し、データ不足の銘柄は自動的に除外されます。</p>
+                    </div>
+                </div>
+
+                <div class="algorithm-card">
+                    <div class="step-number">02</div>
+                    <div class="step-content">
+                        <h3>📈 複数期間のリターン計算</h3>
+                        <p><strong>12ヶ月・6ヶ月・3ヶ月・1ヶ月</strong>の4つの期間でリターンを算出。単純な足し算ではなく、<strong>複利効果を考慮した累積リターン</strong>で正確な成長率を計算します。</p>
+                    </div>
+                </div>
+
+                <div class="algorithm-card">
+                    <div class="step-number">03</div>
+                    <div class="step-content">
+                        <h3>🎯 段階的フィルタリング</h3>
+                        <p><strong>長期→中期→短期</strong>の順番で段階的に絞り込み。まず12ヶ月リターンで上位50銘柄、次に6ヶ月リターンで30銘柄、最後に3ヶ月リターンで<strong>TOP10</strong>を選出します。</p>
+                    </div>
+                </div>
+
+                <div class="algorithm-card">
+                    <div class="step-number">04</div>
+                    <div class="step-content">
+                        <h3>⭐ ULTRA TOP5の選出</h3>
+                        <p>TOP10の中から、さらに<strong>直近1ヶ月のリターン</strong>が最も高い5銘柄を「ULTRA TOP5」として選出。長期的な成長性と直近のモメンタムを兼ね備えた銘柄です。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="algorithm-summary">
+                <div class="summary-box">
+                    <h4>🔬 アルゴリズムの特徴</h4>
+                    <div class="feature-list">
+                        <div class="feature-item">
+                            <span class="feature-icon">📊</span>
+                            <span><strong>多期間分析</strong>：短期的な変動に惑わされない長期視点</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">🎯</span>
+                            <span><strong>段階的絞り込み</strong>：複数の時間軸で一貫して好調な銘柄を選出</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">⚡</span>
+                            <span><strong>モメンタム重視</strong>：直近の勢いも考慮した実用的な選出</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">🔄</span>
+                            <span><strong>毎営業日更新</strong>：毎朝7:00（日本時間）に最新データで自動更新</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-content">
+                <span>© 2025 US Stock Rankings</span>
+                <div class="footer-dot"></div>
+                <span>Powered by Python & GitHub Actions</span>
+                <div class="footer-dot"></div>
+                <span>Auto-updated daily</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // JSONデータ読み込み機能
+        let stockData = null;
+
+        // JSONファイルからデータを読み込む関数
+        async function loadStockData() {
+            try {
+                console.log('JSONファイルを読み込み中...');
+                
+                // 本番用とテスト用のファイル名を試行（本番優先）
+                const filenames = ['data/stock_rankings.json', 'data/stock_rankings_test.json'];
+                
+                for (let filename of filenames) {
+                    try {
+                        const response = await fetch(filename);
+                        if (response.ok) {
+                            stockData = await response.json();
+                            console.log('データ読み込み成功:', filename);
+                            updateDisplay();
+                            return;
+                        }
+                    } catch (e) {
+                        console.log(`${filename} の読み込みに失敗:`, e.message);
+                    }
+                }
+                
+                throw new Error('JSONファイルが見つかりません');
+                
+            } catch (error) {
+                console.error('データ読み込みエラー:', error);
+                showError('データの読み込みに失敗しました。Pythonスクリプトを実行してJSONファイルを生成してください。');
+            }
+        }
+
+        // エラー表示関数
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.innerHTML = `
+                <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); 
+                     border-radius: 8px; padding: 20px; margin: 20px 0; color: #ef4444;">
+                    <strong>⚠️ ${message}</strong>
+                    <p style="margin-top: 10px; font-size: 0.9rem; color: #fca5a5;">
+                        解決方法：<br>
+                        1. stock_ranking.py を実行してJSONファイルを生成<br>
+                        2. HTMLファイルと同じフォルダにdataフォルダがあることを確認<br>
+                        3. ブラウザのコンソール（F12）でエラー詳細を確認
+                    </p>
+                </div>
+            `;
+            document.querySelector('.container').insertBefore(errorDiv, document.querySelector('.main-grid'));
+        }
+
+        // 表示更新関数
+        function updateDisplay() {
+            if (!stockData) return;
+
+            // 更新日時を設定
+            const updateDateElement = document.getElementById('update-date');
+            if (updateDateElement) {
+                updateDateElement.textContent = stockData.generated_at;
+            }
+
+            // NASDAQ-100のデータを更新
+            if (stockData.nasdaq100) {
+                updateRankingTable('nasdaq-top10', stockData.nasdaq100.top_10);
+                updateRankingTable('nasdaq-ultra-top5', stockData.nasdaq100.ultra_top_5, true);
+                updateLastUpdated('nasdaq', stockData.nasdaq100.last_updated);
+            }
+
+            // S&P 500のデータを更新
+            if (stockData.sp500) {
+                updateRankingTable('sp500-top10', stockData.sp500.top_10);
+                updateRankingTable('sp500-ultra-top5', stockData.sp500.ultra_top_5, true);
+                updateLastUpdated('sp500', stockData.sp500.last_updated);
+            }
+
+            console.log('表示更新完了');
+        }
+
+        // ランキングテーブル更新関数
+        function updateRankingTable(containerId, symbols, isUltraTop = false) {
+            const container = document.getElementById(containerId);
+            if (!container || !symbols || symbols.length === 0) return;
+
+            // 既存のランキング行を削除
+            const existingRows = container.querySelectorAll('.ranking-row');
+            existingRows.forEach(row => row.remove());
+
+            // 新しいランキング行を追加
+            symbols.forEach((symbol, index) => {
+                const row = createRankingRow(symbol, index + 1, isUltraTop);
+                container.appendChild(row);
+            });
+        }
+
+        // ランキング行作成関数
+        function createRankingRow(symbol, rank, isUltraTop = false) {
+            const row = document.createElement('div');
+            row.className = `ranking-row ${isUltraTop ? 'ultra-row' : ''}`;
+            
+            const badgeClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'default';
+            
+            row.innerHTML = `
+                <div class="rank-badge ${badgeClass}">${rank}</div>
+                <div class="ticker-symbol">
+                    ${symbol}
+                    ${isUltraTop ? '<span class="ultra-badge">ULTRA</span>' : ''}
+                </div>
+            `;
+
+            // クリックイベントを追加
+            row.querySelector('.ticker-symbol').addEventListener('click', function() {
+                console.log(`${symbol} がクリックされました`);
+                // 将来的に株価詳細表示機能を追加予定
+            });
+
+            return row;
+        }
+
+        // 更新日時設定関数
+        function updateLastUpdated(indexType, date) {
+            const elements = document.querySelectorAll(`.${indexType === 'nasdaq' ? 'nasdaq' : 'sp500'}-indicator`);
+            elements.forEach(el => {
+                const parent = el.closest('.index-header');
+                if (parent) {
+                    const lastUpdatedEl = parent.querySelector('.last-updated');
+                    if (lastUpdatedEl) {
+                        lastUpdatedEl.textContent = `Updated: ${date}`;
+                    }
+                }
+            });
+        }
+
+        // DOM読み込み完了時にデータ読み込みを開始
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('US Stock Rankings サイトが読み込まれました');
+            
+            // 5秒後にJSONファイルを読み込み（サンプルデータを少し見せるため）
+            setTimeout(() => {
+                loadStockData();
+            }, 2000);
+            
+            // 手動読み込みボタンを追加（デバッグ用）
+            const debugButton = document.createElement('button');
+            debugButton.textContent = '🔄 データ再読み込み';
+            debugButton.style.cssText = `
+                position: fixed; top: 20px; right: 20px; z-index: 1000;
+                background: linear-gradient(135deg, #10b981, #059669);
+                color: white; border: none; padding: 10px 15px;
+                border-radius: 8px; cursor: pointer; font-weight: 600;
+            `;
+            debugButton.addEventListener('click', loadStockData);
+            document.body.appendChild(debugButton);
+        });
+    </script>
+</body>
+</html>
