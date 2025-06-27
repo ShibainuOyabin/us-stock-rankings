@@ -9,6 +9,10 @@ from datetime import datetime, timedelta
 import os
 from collections import OrderedDict
 import time
+import requests
+
+# Alpha Vantage API設定
+ALPHA_VANTAGE_API_KEY = "QTLKGZU9EXK5OI3Y"
 
 def get_nasdaq100_symbols():
     """NASDAQ100銘柄を取得"""
@@ -42,7 +46,131 @@ def get_sp500_symbols():
         print(f"フォールバック使用: {len(fallback)}銘柄")
         return fallback, "S&P 500"
 
-def process_stock_data(symbols, index_name):
+def get_alpha_vantage_data(symbol, start_date='2020-01-01'):
+    """Alpha VantageからDaily株価データを取得"""
+    try:
+        url = f"https://www.alphavantage.co/query"
+        params = {
+            'function': 'TIME_SERIES_DAILY',
+            'symbol': symbol,
+            'apikey': ALPHA_VANTAGE_API_KEY,
+            'outputsize': 'full',
+            'datatype': 'json'
+        }
+        
+        response = requests.get(url, params=params, timeout=30)
+        data = response.json()
+        
+        if 'Time Series (Daily)' not in data:
+            if 'Note' in data:
+                print(f"⚠️ Alpha Vantage API制限: {symbol}")
+                return None
+            print(f"❌ Alpha Vantage データなし: {symbol}")
+            return None
+        
+        # データを DataFrame に変換
+        time_series = data['Time Series (Daily)']
+        df = pd.DataFrame.from_dict(time_series, orient='index')
+        df.index = pd.to_datetime(df.index)
+        df = df.sort_index()
+        
+        # 列名を統一（Close価格のみ使用）
+        df.columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+        df['Close'] = df['Close'].astype(float)
+        
+        # 指定期間でフィルタ
+        start_dt = pd.to_datetime(start_date)
+        df = df[df.index >= start_dt]
+        
+        if df.empty:
+            return None
+            
+        return df['Close']
+        
+    except Exception as e:
+        print(f"❌ Alpha Vantage エラー {symbol}: {e}")
+        return None
+
+def get_stock_data_with_fallback(symbols, start_date='2020-01-01'):
+    """yfinance + Alpha Vantage フォールバック でデータ取得"""
+    print(f"📡 データ取得開始: {len(symbols)}銘柄")
+    all_data = {}
+    failed_symbols = []
+    
+    # Phase 1: yfinance で分割取得
+    batch_size = 20
+    print("🔄 Phase 1: yfinance での分割取得")
+    
+    for i in range(0, len(symbols), batch_size):
+        batch_symbols = symbols[i:i+batch_size]
+        print(f"  バッチ {i//batch_size + 1}: {len(batch_symbols)}銘柄")
+        
+        try:
+            batch_df = yf.download(
+                batch_symbols,
+                start=start_date,
+                auto_adjust=False,
+                progress=False,
+                threads=False,
+                timeout=30
+            )['Close']
+            
+            if not batch_df.empty:
+                # 成功した銘柄を記録
+                if len(batch_symbols) == 1:
+                    symbol = batch_symbols[0]
+                    if not batch_df.dropna().empty:
+                        all_data[symbol] = batch_df.dropna()
+                    else:
+                        failed_symbols.append(symbol)
+                else:
+                    for symbol in batch_symbols:
+                        if symbol in batch_df.columns:
+                            symbol_data = batch_df[symbol].dropna()
+                            if not symbol_data.empty:
+                                all_data[symbol] = symbol_data
+                            else:
+                                failed_symbols.append(symbol)
+                        else:
+                            failed_symbols.append(symbol)
+            else:
+                failed_symbols.extend(batch_symbols)
+            
+            time.sleep(3)  # レート制限対策
+            
+        except Exception as e:
+            print(f"    ❌ yfinance バッチエラー: {e}")
+            failed_symbols.extend(batch_symbols)
+            time.sleep(5)
+    
+    print(f"✅ yfinance 成功: {len(all_data)}銘柄, 失敗: {len(failed_symbols)}銘柄")
+    
+    # Phase 2: Alpha Vantage で失敗分をリトライ
+    if failed_symbols and ALPHA_VANTAGE_API_KEY != "YOUR_API_KEY_HERE":
+        print(f"🔄 Phase 2: Alpha Vantage でリトライ ({len(failed_symbols)}銘柄)")
+        
+        for i, symbol in enumerate(failed_symbols):
+            print(f"  {i+1}/{len(failed_symbols)}: {symbol}")
+            
+            alpha_data = get_alpha_vantage_data(symbol, start_date)
+            if alpha_data is not None and not alpha_data.empty:
+                all_data[symbol] = alpha_data
+                print(f"    ✅ Alpha Vantage 成功: {symbol}")
+            else:
+                print(f"    ❌ Alpha Vantage 失敗: {symbol}")
+            
+            # Alpha Vantage は無料版で1分間に5回制限
+            time.sleep(12)  # 安全のため12秒待機
+    
+    # 結果をDataFrameに統合
+    if all_data:
+        result_df = pd.DataFrame(all_data)
+        result_df = result_df.sort_index()
+        print(f"🎯 最終取得成功: {len(result_df.columns)}銘柄")
+        return result_df
+    else:
+        print("❌ すべての取得方法が失敗")
+        return pd.DataFrame()
     """株価データを処理してランキングを生成"""
     if not symbols:
         return None
