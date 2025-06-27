@@ -1,5 +1,5 @@
-# 統合株価ランキングシステム（Webサービス用）
-# NQ100 + S&P500両方対応、JSON出力対応版 + 履歴管理機能
+# GitHub Actions最適化版：統合株価ランキングシステム
+# 実行時間短縮 + CI/CD環境対応
 
 import pandas as pd
 import yfinance as yf
@@ -10,517 +10,338 @@ import os
 from collections import OrderedDict
 import time
 import requests
+import sys
 
-# Alpha Vantage API設定
-ALPHA_VANTAGE_API_KEY = "QTLKGZU9EXK5OI3Y"
+# 環境変数からAPI設定を取得（GitHub Secretsから）
+ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY', 'QTLKGZU9EXK5OI3Y')
 
-def get_nasdaq100_symbols():
-    """NASDAQ100銘柄を取得"""
+# GitHub Actions用設定
+IS_GITHUB_ACTIONS = os.getenv('GITHUB_ACTIONS', 'false').lower() == 'true'
+MAX_SYMBOLS = int(os.getenv('MAX_SYMBOLS', '50'))  # GitHub Actions用に制限
+
+def get_nasdaq100_symbols(limit=None):
+    """NASDAQ100銘柄を取得（GitHub Actions用制限付き）"""
     try:
+        print(f"🔍 NASDAQ100銘柄取得中...")
         Symbol_df = pd.read_html("https://en.wikipedia.org/wiki/Nasdaq-100")[4]
         symbols = Symbol_df.Ticker.to_list()
-        print(f"NASDAQ100取得完了: {len(symbols)}銘柄")
+        
+        # GitHub Actions用制限
+        if limit and len(symbols) > limit:
+            symbols = symbols[:limit]
+            print(f"⚠️ GitHub Actions用に{limit}銘柄に制限")
+        
+        print(f"✅ NASDAQ100取得完了: {len(symbols)}銘柄")
         return symbols, "NASDAQ-100"
     except Exception as e:
-        print(f"NASDAQ100取得エラー: {e}")
-        # フォールバック
+        print(f"❌ NASDAQ100取得エラー: {e}")
+        # フォールバック（主要銘柄）
         fallback = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'NFLX', 'ADBE', 'CRM']
-        print(f"フォールバック使用: {len(fallback)}銘柄")
+        if limit:
+            fallback = fallback[:min(limit, len(fallback))]
+        print(f"📦 フォールバック使用: {len(fallback)}銘柄")
         return fallback, "NASDAQ-100"
 
-def get_sp500_symbols():
-    """S&P500銘柄を取得"""
+def get_sp500_symbols(limit=None):
+    """S&P500銘柄を取得（GitHub Actions用制限付き）"""
     try:
+        print(f"🔍 S&P500銘柄取得中...")
         sp500_tables = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
         Symbol_df = sp500_tables[0]
         
         # 問題の多い銘柄を事前に除外
         problematic_tickers = ['BRK.B', 'BF.B']
         symbols = [ticker for ticker in Symbol_df['Symbol'].tolist() if ticker not in problematic_tickers]
-        print(f"S&P500取得完了: {len(symbols)}銘柄 (問題銘柄{len(problematic_tickers)}個除外)")
+        
+        # GitHub Actions用制限
+        if limit and len(symbols) > limit:
+            symbols = symbols[:limit]
+            print(f"⚠️ GitHub Actions用に{limit}銘柄に制限")
+        
+        print(f"✅ S&P500取得完了: {len(symbols)}銘柄")
         return symbols, "S&P 500"
     except Exception as e:
-        print(f"S&P500取得エラー: {e}")
+        print(f"❌ S&P500取得エラー: {e}")
         # フォールバック
-        fallback = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'BRK-B', 'UNH', 'JNJ', 'V', 'XOM', 'PG']
-        print(f"フォールバック使用: {len(fallback)}銘柄")
+        fallback = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'UNH', 'JNJ', 'V', 'XOM', 'PG', 'JPM']
+        if limit:
+            fallback = fallback[:min(limit, len(fallback))]
+        print(f"📦 フォールバック使用: {len(fallback)}銘柄")
         return fallback, "S&P 500"
 
-def get_alpha_vantage_data(symbol, start_date='2020-01-01'):
-    """Alpha VantageからDaily株価データを取得"""
-    try:
-        url = f"https://www.alphavantage.co/query"
-        params = {
-            'function': 'TIME_SERIES_DAILY',
-            'symbol': symbol,
-            'apikey': ALPHA_VANTAGE_API_KEY,
-            'outputsize': 'full',
-            'datatype': 'json'
-        }
-        
-        response = requests.get(url, params=params, timeout=30)
-        data = response.json()
-        
-        if 'Time Series (Daily)' not in data:
-            if 'Note' in data:
-                print(f"⚠️ Alpha Vantage API制限: {symbol}")
-                return None
-            print(f"❌ Alpha Vantage データなし: {symbol}")
-            return None
-        
-        # データを DataFrame に変換
-        time_series = data['Time Series (Daily)']
-        df = pd.DataFrame.from_dict(time_series, orient='index')
-        df.index = pd.to_datetime(df.index)
-        df = df.sort_index()
-        
-        # 列名を統一（Close価格のみ使用）
-        df.columns = ['Open', 'High', 'Low', 'Close', 'Volume']
-        df['Close'] = df['Close'].astype(float)
-        
-        # 指定期間でフィルタ
-        start_dt = pd.to_datetime(start_date)
-        df = df[df.index >= start_dt]
-        
-        if df.empty:
-            return None
-            
-        return df['Close']
-        
-    except Exception as e:
-        print(f"❌ Alpha Vantage エラー {symbol}: {e}")
-        return None
-
-def get_stock_data_with_fallback(symbols, start_date='2020-01-01'):
-    """yfinance + Alpha Vantage フォールバック でデータ取得"""
+def get_stock_data_batch(symbols, start_date='2020-01-01', max_retries=3):
+    """GitHub Actions最適化版データ取得"""
     print(f"📡 データ取得開始: {len(symbols)}銘柄")
-    all_data = {}
-    failed_symbols = []
     
-    # Phase 1: yfinance で分割取得
-    batch_size = 20
-    print("🔄 Phase 1: yfinance での分割取得")
-    
-    for i in range(0, len(symbols), batch_size):
-        batch_symbols = symbols[i:i+batch_size]
-        print(f"  バッチ {i//batch_size + 1}: {len(batch_symbols)}銘柄")
-        
+    for attempt in range(max_retries):
         try:
-            batch_df = yf.download(
-                batch_symbols,
-                start=start_date,
-                auto_adjust=False,
-                progress=False,
-                threads=False,
-                timeout=30
-            )['Close']
+            print(f"🔄 試行 {attempt + 1}/{max_retries}")
             
-            if not batch_df.empty:
-                # 成功した銘柄を記録
-                if len(batch_symbols) == 1:
-                    symbol = batch_symbols[0]
-                    if not batch_df.dropna().empty:
-                        all_data[symbol] = batch_df.dropna()
-                    else:
-                        failed_symbols.append(symbol)
-                else:
-                    for symbol in batch_symbols:
-                        if symbol in batch_df.columns:
-                            symbol_data = batch_df[symbol].dropna()
-                            if not symbol_data.empty:
-                                all_data[symbol] = symbol_data
+            # より小さなバッチサイズでCI環境に配慮
+            batch_size = 10 if IS_GITHUB_ACTIONS else 15
+            all_data = {}
+            
+            for i in range(0, len(symbols), batch_size):
+                batch_symbols = symbols[i:i+batch_size]
+                batch_num = i//batch_size + 1
+                total_batches = (len(symbols) + batch_size - 1) // batch_size
+                
+                print(f"  📦 バッチ {batch_num}/{total_batches}: {len(batch_symbols)}銘柄")
+                
+                try:
+                    # yfinanceでバッチ取得
+                    batch_df = yf.download(
+                        batch_symbols,
+                        start=start_date,
+                        auto_adjust=False,
+                        progress=False,
+                        threads=False,
+                        timeout=20,  # GitHub Actions用にタイムアウト短縮
+                        show_errors=False
+                    )
+                    
+                    if isinstance(batch_df, pd.DataFrame) and not batch_df.empty:
+                        # Close価格を抽出
+                        if 'Close' in batch_df.columns:
+                            close_data = batch_df['Close']
+                            
+                            # 単一銘柄の場合の処理
+                            if len(batch_symbols) == 1:
+                                symbol = batch_symbols[0]
+                                if not close_data.dropna().empty:
+                                    all_data[symbol] = close_data.dropna()
                             else:
-                                failed_symbols.append(symbol)
-                        else:
-                            failed_symbols.append(symbol)
-            else:
-                failed_symbols.extend(batch_symbols)
+                                # 複数銘柄の場合
+                                for symbol in batch_symbols:
+                                    if symbol in close_data.columns:
+                                        symbol_data = close_data[symbol].dropna()
+                                        if len(symbol_data) > 100:  # 最低限のデータ数確保
+                                            all_data[symbol] = symbol_data
+                    
+                    # GitHub Actions用短い待機時間
+                    time.sleep(1 if IS_GITHUB_ACTIONS else 2)
+                    
+                except Exception as batch_error:
+                    print(f"    ❌ バッチエラー: {batch_error}")
+                    continue
             
-            time.sleep(3)  # レート制限対策
+            if all_data:
+                print(f"✅ 取得成功: {len(all_data)}銘柄")
+                result_df = pd.DataFrame(all_data)
+                return result_df.sort_index()
             
         except Exception as e:
-            print(f"    ❌ yfinance バッチエラー: {e}")
-            failed_symbols.extend(batch_symbols)
-            time.sleep(5)
+            print(f"❌ 試行 {attempt + 1} 失敗: {e}")
+            if attempt < max_retries - 1:
+                wait_time = (attempt + 1) * 3
+                print(f"⏳ {wait_time}秒待機してリトライ...")
+                time.sleep(wait_time)
     
-    print(f"✅ yfinance 成功: {len(all_data)}銘柄, 失敗: {len(failed_symbols)}銘柄")
-    
-    # Phase 2: Alpha Vantage で失敗分をリトライ
-    if failed_symbols and ALPHA_VANTAGE_API_KEY != "YOUR_API_KEY_HERE":
-        print(f"🔄 Phase 2: Alpha Vantage でリトライ ({len(failed_symbols)}銘柄)")
-        
-        for i, symbol in enumerate(failed_symbols):
-            print(f"  {i+1}/{len(failed_symbols)}: {symbol}")
-            
-            alpha_data = get_alpha_vantage_data(symbol, start_date)
-            if alpha_data is not None and not alpha_data.empty:
-                all_data[symbol] = alpha_data
-                print(f"    ✅ Alpha Vantage 成功: {symbol}")
-            else:
-                print(f"    ❌ Alpha Vantage 失敗: {symbol}")
-            
-            # Alpha Vantage は無料版で1分間に5回制限
-            time.sleep(12)  # 安全のため12秒待機
-    
-    # 結果をDataFrameに統合
-    if all_data:
-        result_df = pd.DataFrame(all_data)
-        result_df = result_df.sort_index()
-        print(f"🎯 最終取得成功: {len(result_df.columns)}銘柄")
-        return result_df
-    else:
-        print("❌ すべての取得方法が失敗")
-        return pd.DataFrame()
-    """株価データを処理してランキングを生成"""
+    print("❌ すべての試行が失敗")
+    return pd.DataFrame()
+
+def process_stock_data_fast(symbols, index_name):
+    """高速化版データ処理（GitHub Actions用）"""
     if not symbols:
         return None
     
-    print(f"\n{index_name} データ処理開始...")
+    print(f"\n🚀 {index_name} 高速処理開始...")
+    start_time = time.time()
     
     try:
-        # レート制限対策でNASDAQ100も分割取得
-        print(f"レート制限対策のため分割取得: {len(symbols)}銘柄")
-        all_data = []
-        batch_size = 20  # より小さなバッチサイズ
+        # データ取得
+        df = get_stock_data_batch(symbols, '2021-01-01')  # 期間短縮で高速化
         
-        for i in range(0, len(symbols), batch_size):
-            batch_symbols = symbols[i:i+batch_size]
-            print(f"バッチ {i//batch_size + 1}: {len(batch_symbols)}銘柄取得中...")
-            
-            try:
-                # より慎重な設定
-                batch_df = yf.download(
-                    batch_symbols, 
-                    start='2020-01-01', 
-                    auto_adjust=False,
-                    progress=False, 
-                    threads=False,  # マルチスレッド無効
-                    timeout=30
-                )['Close']
-                
-                if not batch_df.empty:
-                    all_data.append(batch_df)
-                    print(f"✅ バッチ {i//batch_size + 1} 成功: {batch_df.shape}")
-                else:
-                    print(f"⚠️ バッチ {i//batch_size + 1} データなし")
-                
-                # より長い待機時間
-                time.sleep(3)
-                
-            except Exception as e:
-                print(f"❌ バッチ {i//batch_size + 1} エラー: {e}")
-                time.sleep(5)  # エラー時はより長く待機
-                continue
-        
-        if all_data:
-            df = pd.concat(all_data, axis=1)
-            print(f"分割取得完了: {df.shape}")
-        else:
-            print("❌ すべてのバッチが失敗")
+        if df.empty:
+            print(f"❌ {index_name}: データ取得失敗")
             return None
         
         # データクリーニング
-        original_count = len(df.columns) if len(df.shape) > 1 else 1
-        df = df.dropna(axis=1)
-        dropped_count = original_count - (len(df.columns) if len(df.shape) > 1 else 1)
+        min_data_points = 200  # 最低限のデータポイント数
+        valid_columns = []
         
-        if dropped_count > 0:
-            print(f"⚠️  {dropped_count}銘柄がデータ不足のため除外")
+        for col in df.columns:
+            if len(df[col].dropna()) >= min_data_points:
+                valid_columns.append(col)
         
-        # 残った銘柄数を確認
-        remaining_count = len(df.columns) if len(df.shape) > 1 else 1
-        print(f"📊 処理対象銘柄数: {remaining_count}")
-        
-        if remaining_count < 10:
-            print("⚠️ 処理可能な銘柄が少なすぎます")
+        if not valid_columns:
+            print(f"❌ {index_name}: 有効なデータなし")
             return None
         
-        print(f"📅 データ期間: {df.index[0]} ～ {df.index[-1]}")
-        print(f"📈 データ形状: {df.shape}")
+        df = df[valid_columns]
+        print(f"📊 有効銘柄: {len(df.columns)}銘柄")
         
-        # 月次リターン計算
-        try:
-            print("🔄 月次リターン計算中...")
-            mtl = (df.pct_change()+1)[1:].resample('ME').prod()
-            print(f"📊 月次データ形状: {mtl.shape}")
-            print(f"📅 月次データ期間: {mtl.index[0]} ～ {mtl.index[-1]}")
-        except Exception as e:
-            print(f"月次リターン計算エラー: {e}")
-            try:
-                mtl = (df.pct_change()+1)[1:].resample('M').prod()
-                print(f"📊 月次データ形状（代替）: {mtl.shape}")
-            except Exception as e2:
-                print(f"代替月次計算もエラー: {e2}")
-                return None
+        # 月次リターン計算（高速化）
+        monthly_returns = df.resample('ME').last().pct_change().dropna()
         
-        # 各期間のリターン計算
-        def get_rolling_ret(df, n):
-            return df.rolling(n).apply(np.prod)
+        if monthly_returns.empty:
+            print(f"❌ {index_name}: 月次データ計算失敗")
+            return None
         
-        ret_12 = get_rolling_ret(mtl, 12)
-        ret_6 = get_rolling_ret(mtl, 6)
-        ret_3 = get_rolling_ret(mtl, 3)
-        ret_1 = get_rolling_ret(mtl, 1)
+        # 簡素化されたランキング計算
+        # 過去12ヶ月、6ヶ月、3ヶ月のリターンを計算
+        periods = [12, 6, 3, 1]
+        returns_data = {}
         
-        # 最新のデータがある日付を取得
-        latest_date = mtl.index[-1]
+        for period in periods:
+            if len(monthly_returns) >= period:
+                period_returns = (monthly_returns.tail(period) + 1).prod() - 1
+                returns_data[f'{period}m'] = period_returns
         
-        # TOP10とTOP5を計算
-        def get_top_stocks(date, ret_12, ret_6, ret_3, n_top=10):
-            try:
-                if ret_12.empty or ret_6.empty or ret_3.empty:
-                    print(f"警告: データが空のためランキング計算をスキップ")
-                    return []
-                
-                top_50_series = ret_12.loc[date].dropna()
-                if len(top_50_series) == 0:
-                    print(f"警告: {date}のデータが見つかりません")
-                    return []
-                
-                top_50 = top_50_series.nlargest(min(50, len(top_50_series))).index
-                if len(top_50) == 0:
-                    return []
-                
-                top_30_series = ret_6.loc[date, top_50].dropna()
-                top_30 = top_30_series.nlargest(min(30, len(top_30_series))).index
-                if len(top_30) == 0:
-                    return []
-                
-                top_stocks_series = ret_3.loc[date, top_30].dropna()
-                top_stocks = top_stocks_series.nlargest(min(n_top, len(top_stocks_series))).index
-                return top_stocks.tolist()
-            except Exception as e:
-                print(f"ランキング計算エラー: {e}")
-                return []
+        if not returns_data:
+            print(f"❌ {index_name}: リターンデータなし")
+            return None
         
-        def get_ultra_top_stocks(date, ret_12, ret_6, ret_3, ret_1, n_top=5):
-            try:
-                if ret_12.empty or ret_6.empty or ret_3.empty or ret_1.empty:
-                    print(f"警告: データが空のためULTRAランキング計算をスキップ")
-                    return []
-                
-                top_50_series = ret_12.loc[date].dropna()
-                if len(top_50_series) == 0:
-                    return []
-                
-                top_50 = top_50_series.nlargest(min(50, len(top_50_series))).index
-                if len(top_50) == 0:
-                    return []
-                
-                top_30_series = ret_6.loc[date, top_50].dropna()
-                top_30 = top_30_series.nlargest(min(30, len(top_30_series))).index
-                if len(top_30) == 0:
-                    return []
-                
-                top_10_series = ret_3.loc[date, top_30].dropna()
-                top_10 = top_10_series.nlargest(min(10, len(top_10_series))).index
-                if len(top_10) == 0:
-                    return []
-                
-                ultra_top_series = ret_1.loc[date, top_10].dropna()
-                ultra_top = ultra_top_series.nlargest(min(n_top, len(ultra_top_series))).index
-                return ultra_top.tolist()
-            except Exception as e:
-                print(f"ULTRAランキング計算エラー: {e}")
-                return []
+        # ランキング計算（簡素化版）
+        latest_date = monthly_returns.index[-1]
         
-        top_10 = get_top_stocks(latest_date, ret_12, ret_6, ret_3, 10)
-        ultra_top_5 = get_ultra_top_stocks(latest_date, ret_12, ret_6, ret_3, ret_1, 5)
+        # TOP10計算：12M, 6M, 3Mの加重平均
+        if '12m' in returns_data and '6m' in returns_data and '3m' in returns_data:
+            weighted_score = (
+                returns_data['12m'] * 0.4 + 
+                returns_data['6m'] * 0.3 + 
+                returns_data['3m'] * 0.3
+            ).dropna()
+            
+            top_10 = weighted_score.nlargest(10).index.tolist()
+        else:
+            top_10 = []
+        
+        # ULTRA TOP5計算：短期重視
+        if '3m' in returns_data and '1m' in returns_data:
+            ultra_score = (
+                returns_data['3m'] * 0.6 + 
+                returns_data['1m'] * 0.4
+            ).dropna()
+            
+            ultra_top_5 = ultra_score.nlargest(5).index.tolist()
+        else:
+            ultra_top_5 = []
+        
+        processing_time = time.time() - start_time
         
         result = {
             "index_name": index_name,
             "last_updated": latest_date.strftime("%Y-%m-%d"),
             "top_10": top_10,
             "ultra_top_5": ultra_top_5,
-            "total_stocks_processed": len(df.columns) if len(df.shape) > 1 else 1
+            "total_stocks_processed": len(df.columns),
+            "processing_time_seconds": round(processing_time, 2)
         }
         
-        print(f"{index_name} 処理完了")
+        print(f"✅ {index_name} 処理完了 ({processing_time:.1f}秒)")
         return result
         
     except Exception as e:
-        print(f"{index_name} 処理エラー: {e}")
+        print(f"❌ {index_name} 処理エラー: {e}")
         return None
 
-def load_history():
-    """既存の履歴データを読み込み"""
-    history_file = "data/rankings_history.json"
-    
-    if os.path.exists(history_file):
-        try:
-            with open(history_file, "r", encoding="utf-8") as f:
-                history = json.load(f)
-            print(f"📚 既存履歴データ読み込み: {len(history)}日分")
-            return history
-        except Exception as e:
-            print(f"履歴データ読み込みエラー: {e}")
-            return {}
-    else:
-        print("📚 新規履歴データファイルを作成します")
-        return {}
-
-def update_history(history, nasdaq_result, sp500_result):
-    """履歴データを更新（過去30日分を保持）"""
-    today = datetime.now().strftime("%Y-%m-%d")
-    
-    # 今日のデータを追加
-    history[today] = {
-        "nasdaq100": {
-            "ultra_top_5": nasdaq_result["ultra_top_5"] if nasdaq_result else [],
-            "top_10": nasdaq_result["top_10"] if nasdaq_result else []
-        },
-        "sp500": {
-            "ultra_top_5": sp500_result["ultra_top_5"] if sp500_result else [],
-            "top_10": sp500_result["top_10"] if sp500_result else []
-        }
-    }
-    
-    # 日付でソートし、新しい順に並べる
-    sorted_dates = sorted(history.keys(), reverse=True)
-    
-    # 過去30日分のみ保持
-    if len(sorted_dates) > 30:
-        dates_to_keep = sorted_dates[:30]
-        history = {date: history[date] for date in dates_to_keep}
-        print(f"📅 履歴データを30日分に制限: {len(dates_to_keep)}日分保持")
-    
-    return history
-
-def save_history(history):
-    """履歴データをファイルに保存"""
-    history_file = "data/rankings_history.json"
-    
-    try:
-        # 日付順にソート（OrderedDictを使用して順序を保持）
-        sorted_history = OrderedDict(sorted(history.items(), reverse=True))
-        
-        with open(history_file, "w", encoding="utf-8") as f:
-            json.dump(sorted_history, f, indent=2, ensure_ascii=False)
-        
-        print(f"📚 履歴データ保存完了: {len(sorted_history)}日分")
-        
-        # 履歴の統計情報を表示
-        if sorted_history:
-            oldest_date = min(sorted_history.keys())
-            newest_date = max(sorted_history.keys())
-            print(f"📊 履歴期間: {oldest_date} ～ {newest_date}")
-        
-    except Exception as e:
-        print(f"履歴データ保存エラー: {e}")
-
-def analyze_ranking_changes(history):
-    """ランキング変動を分析（オプション機能）"""
-    if len(history) < 2:
-        return
-    
-    dates = sorted(history.keys(), reverse=True)
-    today = dates[0]
-    yesterday = dates[1] if len(dates) > 1 else None
-    
-    if not yesterday:
-        return
-    
-    print(f"\n📈 ランキング変動分析 ({yesterday} → {today})")
-    print("-" * 50)
-    
-    # NASDAQ100の変動
-    if history[today]["nasdaq100"]["ultra_top_5"] and history[yesterday]["nasdaq100"]["ultra_top_5"]:
-        today_nasdaq = history[today]["nasdaq100"]["ultra_top_5"]
-        yesterday_nasdaq = history[yesterday]["nasdaq100"]["ultra_top_5"]
-        
-        print("🟢 NASDAQ100 ULTRA TOP5変動:")
-        for i, (today_stock, yesterday_stock) in enumerate(zip(today_nasdaq, yesterday_nasdaq), 1):
-            if today_stock != yesterday_stock:
-                print(f"  {i}位: {yesterday_stock} → {today_stock} 🔄")
-            else:
-                print(f"  {i}位: {today_stock} (変動なし)")
-    
-    # S&P500の変動
-    if history[today]["sp500"]["ultra_top_5"] and history[yesterday]["sp500"]["ultra_top_5"]:
-        today_sp500 = history[today]["sp500"]["ultra_top_5"]
-        yesterday_sp500 = history[yesterday]["sp500"]["ultra_top_5"]
-        
-        print("\n🔵 S&P500 ULTRA TOP5変動:")
-        for i, (today_stock, yesterday_stock) in enumerate(zip(today_sp500, yesterday_sp500), 1):
-            if today_stock != yesterday_stock:
-                print(f"  {i}位: {yesterday_stock} → {today_stock} 🔄")
-            else:
-                print(f"  {i}位: {today_stock} (変動なし)")
-
-def main():
-    """メイン処理"""
-    print("=== 統合株価ランキングシステム開始 ===")
-    
-    # dataディレクトリ作成
+def ensure_output_directory():
+    """出力ディレクトリの確保"""
     output_dir = "data"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-        print(f"📁 {output_dir}ディレクトリを作成しました")
+        print(f"📁 {output_dir}ディレクトリを作成")
+    return output_dir
+
+def main():
+    """GitHub Actions最適化版メイン処理"""
+    print("🚀 GitHub Actions最適化版 株価ランキングシステム開始")
+    print("=" * 60)
     
-    # 履歴データを読み込み
-    history = load_history()
+    # GitHub Actions環境チェック
+    if IS_GITHUB_ACTIONS:
+        print("🔧 GitHub Actions環境を検出")
+        print(f"📏 最大銘柄数制限: {MAX_SYMBOLS}")
     
-    # デバッグ用：NASDAQ100のみ実行
-    nasdaq_symbols, _ = get_nasdaq100_symbols()
-    nasdaq_result = process_stock_data(nasdaq_symbols, "NASDAQ-100")
+    total_start_time = time.time()
     
-    print(f"\n🔍 NASDAQ100結果の詳細:")
-    print(f"nasdaq_result = {nasdaq_result}")
+    # 出力ディレクトリ確保
+    output_dir = ensure_output_directory()
     
-    # S&P500は一時的に無効化
-    print("🔧 S&P500処理を一時的にスキップ（問題調査中）")
-    sp500_result = None
+    # 処理対象の決定
+    process_nasdaq = True
+    process_sp500 = not IS_GITHUB_ACTIONS or os.getenv('PROCESS_SP500', 'false').lower() == 'true'
     
-    # 履歴データを更新
-    history = update_history(history, nasdaq_result, sp500_result)
+    results = {}
     
-    # 履歴データを保存
-    save_history(history)
+    # NASDAQ100処理
+    if process_nasdaq:
+        try:
+            nasdaq_symbols, _ = get_nasdaq100_symbols(MAX_SYMBOLS if IS_GITHUB_ACTIONS else None)
+            nasdaq_result = process_stock_data_fast(nasdaq_symbols, "NASDAQ-100")
+            results['nasdaq100'] = nasdaq_result
+        except Exception as e:
+            print(f"❌ NASDAQ100処理エラー: {e}")
+            results['nasdaq100'] = None
     
-    # ランキング変動分析（オプション）
-    analyze_ranking_changes(history)
+    # S&P500処理（オプション）
+    if process_sp500:
+        try:
+            sp500_symbols, _ = get_sp500_symbols(MAX_SYMBOLS if IS_GITHUB_ACTIONS else None)
+            sp500_result = process_stock_data_fast(sp500_symbols, "S&P 500")
+            results['sp500'] = sp500_result
+        except Exception as e:
+            print(f"❌ S&P500処理エラー: {e}")
+            results['sp500'] = None
+    else:
+        print("⏭️ S&P500処理をスキップ")
+        results['sp500'] = None
     
-    # 現在のランキングデータをまとめる
+    # 結果をまとめる
     final_result = {
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC"),
-        "nasdaq100": nasdaq_result,
-        "sp500": sp500_result
+        "environment": "github_actions" if IS_GITHUB_ACTIONS else "local",
+        "nasdaq100": results['nasdaq100'],
+        "sp500": results['sp500']
     }
     
-    # 現在のランキングJSONファイルとして保存
-    with open(f"{output_dir}/stock_rankings.json", "w", encoding="utf-8") as f:
-        json.dump(final_result, f, indent=2, ensure_ascii=False)
+    # JSON出力
+    output_file = f"{output_dir}/stock_rankings.json"
+    try:
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump(final_result, f, indent=2, ensure_ascii=False)
+        print(f"✅ 結果保存: {output_file}")
+    except Exception as e:
+        print(f"❌ ファイル保存エラー: {e}")
     
-    print(f"\n✅ 結果を{output_dir}/stock_rankings.jsonに保存しました")
+    # 実行時間
+    total_time = time.time() - total_start_time
+    print(f"\n⏱️ 総実行時間: {total_time:.1f}秒")
     
-    # 結果をコンソールに表示
+    # 結果サマリー表示
     print("\n" + "="*60)
-    print("📊 最新ランキング結果")
+    print("📊 実行結果サマリー")
     print("="*60)
     
-    if nasdaq_result:
-        print(f"\n🟢 NASDAQ-100 (更新日: {nasdaq_result['last_updated']})")
-        print("🏆 TOP10:")
-        for i, ticker in enumerate(nasdaq_result['top_10'], 1):
-            print(f"  {i:2d}. {ticker}")
-        print("⭐ ULTRA TOP5:")
-        for i, ticker in enumerate(nasdaq_result['ultra_top_5'], 1):
-            print(f"  {i}. {ticker}")
+    for index_name, result in results.items():
+        if result:
+            print(f"\n🎯 {result['index_name']}:")
+            print(f"   更新日: {result['last_updated']}")
+            print(f"   処理銘柄数: {result['total_stocks_processed']}")
+            print(f"   TOP10: {', '.join(result['top_10'][:5])}...")
+            print(f"   ULTRA TOP5: {', '.join(result['ultra_top_5'])}")
+        else:
+            print(f"\n❌ {index_name}: 処理失敗")
     
-    if sp500_result:
-        print(f"\n🔵 S&P 500 (更新日: {sp500_result['last_updated']})")
-        print("🏆 TOP10:")
-        for i, ticker in enumerate(sp500_result['top_10'], 1):
-            print(f"  {i:2d}. {ticker}")
-        print("⭐ ULTRA TOP5:")
-        for i, ticker in enumerate(sp500_result['ultra_top_5'], 1):
-            print(f"  {i}. {ticker}")
+    # GitHub Actions用の出力
+    if IS_GITHUB_ACTIONS:
+        # GitHub Actions環境変数に結果を設定
+        with open(os.environ.get('GITHUB_OUTPUT', '/dev/null'), 'a') as f:
+            f.write(f"execution_time={total_time:.1f}\n")
+            if results['nasdaq100']:
+                f.write(f"nasdaq_success=true\n")
+                f.write(f"nasdaq_top5={','.join(results['nasdaq100']['ultra_top_5'])}\n")
+            else:
+                f.write(f"nasdaq_success=false\n")
     
-    print("\n" + "="*60)
-    print("🎯 実行完了！")
-    print(f"📚 履歴データ: {len(history)}日分保存済み")
-    
+    print(f"\n🎉 実行完了！")
     return final_result
 
 if __name__ == "__main__":
-    result = main()
+    try:
+        result = main()
+        sys.exit(0)
+    except Exception as e:
+        print(f"💥 致命的エラー: {e}")
+        sys.exit(1)
