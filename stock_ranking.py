@@ -82,21 +82,60 @@ def process_stock_data(symbols, index_name):
         # TOP10とTOP5を計算
         def get_top_stocks(date, ret_12, ret_6, ret_3, n_top=10):
             try:
-                top_50 = ret_12.loc[date].nlargest(50).index
-                top_30 = ret_6.loc[date, top_50].nlargest(30).index
-                top_stocks = ret_3.loc[date, top_30].nlargest(n_top).index
+                if ret_12.empty or ret_6.empty or ret_3.empty:
+                    print(f"警告: データが空のためランキング計算をスキップ")
+                    return []
+                
+                top_50_series = ret_12.loc[date].dropna()
+                if len(top_50_series) == 0:
+                    print(f"警告: {date}のデータが見つかりません")
+                    return []
+                
+                top_50 = top_50_series.nlargest(min(50, len(top_50_series))).index
+                if len(top_50) == 0:
+                    return []
+                
+                top_30_series = ret_6.loc[date, top_50].dropna()
+                top_30 = top_30_series.nlargest(min(30, len(top_30_series))).index
+                if len(top_30) == 0:
+                    return []
+                
+                top_stocks_series = ret_3.loc[date, top_30].dropna()
+                top_stocks = top_stocks_series.nlargest(min(n_top, len(top_stocks_series))).index
                 return top_stocks.tolist()
-            except:
+            except Exception as e:
+                print(f"ランキング計算エラー: {e}")
                 return []
         
         def get_ultra_top_stocks(date, ret_12, ret_6, ret_3, ret_1, n_top=5):
             try:
-                top_50 = ret_12.loc[date].nlargest(50).index
-                top_30 = ret_6.loc[date, top_50].nlargest(30).index
-                top_10 = ret_3.loc[date, top_30].nlargest(10).index
-                ultra_top = ret_1.loc[date, top_10].nlargest(n_top).index
+                if ret_12.empty or ret_6.empty or ret_3.empty or ret_1.empty:
+                    print(f"警告: データが空のためULTRAランキング計算をスキップ")
+                    return []
+                
+                top_50_series = ret_12.loc[date].dropna()
+                if len(top_50_series) == 0:
+                    return []
+                
+                top_50 = top_50_series.nlargest(min(50, len(top_50_series))).index
+                if len(top_50) == 0:
+                    return []
+                
+                top_30_series = ret_6.loc[date, top_50].dropna()
+                top_30 = top_30_series.nlargest(min(30, len(top_30_series))).index
+                if len(top_30) == 0:
+                    return []
+                
+                top_10_series = ret_3.loc[date, top_30].dropna()
+                top_10 = top_10_series.nlargest(min(10, len(top_10_series))).index
+                if len(top_10) == 0:
+                    return []
+                
+                ultra_top_series = ret_1.loc[date, top_10].dropna()
+                ultra_top = ultra_top_series.nlargest(min(n_top, len(ultra_top_series))).index
                 return ultra_top.tolist()
-            except:
+            except Exception as e:
+                print(f"ULTRAランキング計算エラー: {e}")
                 return []
         
         top_10 = get_top_stocks(latest_date, ret_12, ret_6, ret_3, 10)
