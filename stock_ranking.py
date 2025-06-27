@@ -8,6 +8,7 @@ import json
 from datetime import datetime, timedelta
 import os
 from collections import OrderedDict
+import time
 
 def get_nasdaq100_symbols():
     """NASDAQ100銘柄を取得"""
@@ -49,9 +50,36 @@ def process_stock_data(symbols, index_name):
     print(f"\n{index_name} データ処理開始...")
     
     try:
-        # 株価データダウンロード
-        df = yf.download(symbols, start='2020-01-01', auto_adjust=False)['Close']
-        print(f"ダウンロード完了: {df.shape}")
+        # S&P500の場合は分割取得
+        if len(symbols) > 200:
+            print(f"大量データのため分割取得: {len(symbols)}銘柄")
+            all_data = []
+            batch_size = 100
+            
+            for i in range(0, len(symbols), batch_size):
+                batch_symbols = symbols[i:i+batch_size]
+                print(f"バッチ {i//batch_size + 1}: {len(batch_symbols)}銘柄取得中...")
+                
+                try:
+                    batch_df = yf.download(batch_symbols, start='2020-01-01', auto_adjust=False, 
+                                         progress=False, threads=True)['Close']
+                    if not batch_df.empty:
+                        all_data.append(batch_df)
+                    time.sleep(1)  # レート制限対策
+                except Exception as e:
+                    print(f"バッチ {i//batch_size + 1} エラー: {e}")
+                    continue
+            
+            if all_data:
+                df = pd.concat(all_data, axis=1)
+                print(f"分割取得完了: {df.shape}")
+            else:
+                print("すべてのバッチが失敗")
+                return None
+        else:
+            # NASDAQ100など少数の場合は通常取得
+            df = yf.download(symbols, start='2020-01-01', auto_adjust=False, progress=False)['Close']
+            print(f"一括取得完了: {df.shape}")
         
         # データクリーニング
         original_count = len(df.columns) if len(df.shape) > 1 else 1
@@ -61,11 +89,31 @@ def process_stock_data(symbols, index_name):
         if dropped_count > 0:
             print(f"⚠️  {dropped_count}銘柄がデータ不足のため除外")
         
+        # 残った銘柄数を確認
+        remaining_count = len(df.columns) if len(df.shape) > 1 else 1
+        print(f"📊 処理対象銘柄数: {remaining_count}")
+        
+        if remaining_count < 10:
+            print("⚠️ 処理可能な銘柄が少なすぎます")
+            return None
+        
+        print(f"📅 データ期間: {df.index[0]} ～ {df.index[-1]}")
+        print(f"📈 データ形状: {df.shape}")
+        
         # 月次リターン計算
         try:
+            print("🔄 月次リターン計算中...")
             mtl = (df.pct_change()+1)[1:].resample('ME').prod()
-        except:
-            mtl = (df.pct_change()+1)[1:].resample('M').prod()
+            print(f"📊 月次データ形状: {mtl.shape}")
+            print(f"📅 月次データ期間: {mtl.index[0]} ～ {mtl.index[-1]}")
+        except Exception as e:
+            print(f"月次リターン計算エラー: {e}")
+            try:
+                mtl = (df.pct_change()+1)[1:].resample('M').prod()
+                print(f"📊 月次データ形状（代替）: {mtl.shape}")
+            except Exception as e2:
+                print(f"代替月次計算もエラー: {e2}")
+                return None
         
         # 各期間のリターン計算
         def get_rolling_ret(df, n):
@@ -274,12 +322,16 @@ def main():
     # 履歴データを読み込み
     history = load_history()
     
-    # 両指数のデータを取得・処理
+    # デバッグ用：NASDAQ100のみ実行
     nasdaq_symbols, _ = get_nasdaq100_symbols()
-    sp500_symbols, _ = get_sp500_symbols()
-    
     nasdaq_result = process_stock_data(nasdaq_symbols, "NASDAQ-100")
-    sp500_result = process_stock_data(sp500_symbols, "S&P 500")
+    
+    print(f"\n🔍 NASDAQ100結果の詳細:")
+    print(f"nasdaq_result = {nasdaq_result}")
+    
+    # S&P500は一時的に無効化
+    print("🔧 S&P500処理を一時的にスキップ（問題調査中）")
+    sp500_result = None
     
     # 履歴データを更新
     history = update_history(history, nasdaq_result, sp500_result)
