@@ -9,17 +9,8 @@ from datetime import datetime, timedelta
 import os
 from collections import OrderedDict
 
-# テスト実行用フラグ
-TEST_MODE = False  # 本格実行モード（全銘柄データ）
-
 def get_nasdaq100_symbols():
     """NASDAQ100銘柄を取得"""
-    if TEST_MODE:
-        # テスト用の少数銘柄
-        test_symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'NFLX', 'ADBE', 'CRM']
-        print(f"テストモード: NASDAQ100 {len(test_symbols)}銘柄")
-        return test_symbols, "NASDAQ-100"
-    
     try:
         Symbol_df = pd.read_html("https://en.wikipedia.org/wiki/Nasdaq-100")[4]
         symbols = Symbol_df.Ticker.to_list()
@@ -34,12 +25,6 @@ def get_nasdaq100_symbols():
 
 def get_sp500_symbols():
     """S&P500銘柄を取得"""
-    if TEST_MODE:
-        # テスト用の少数銘柄（NASDAQ100と少し違う銘柄）
-        test_symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'BRK-B', 'UNH', 'JNJ', 'V', 'XOM', 'PG']
-        print(f"テストモード: S&P500 {len(test_symbols)}銘柄")
-        return test_symbols, "S&P 500"
-    
     try:
         sp500_tables = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
         Symbol_df = sp500_tables[0]
@@ -241,9 +226,6 @@ def main():
     """メイン処理"""
     print("=== 統合株価ランキングシステム開始 ===")
     
-    if TEST_MODE:
-        print("🧪 テストモード実行中（少数銘柄で動作確認）")
-    
     # dataディレクトリ作成
     output_dir = "data"
     if not os.path.exists(output_dir):
@@ -272,17 +254,15 @@ def main():
     # 現在のランキングデータをまとめる
     final_result = {
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC"),
-        "test_mode": TEST_MODE,
         "nasdaq100": nasdaq_result,
         "sp500": sp500_result
     }
     
     # 現在のランキングJSONファイルとして保存
-    filename = "stock_rankings_test.json" if TEST_MODE else "stock_rankings.json"
-    with open(f"{output_dir}/{filename}", "w", encoding="utf-8") as f:
+    with open(f"{output_dir}/stock_rankings.json", "w", encoding="utf-8") as f:
         json.dump(final_result, f, indent=2, ensure_ascii=False)
     
-    print(f"\n✅ 結果を{output_dir}/{filename}に保存しました")
+    print(f"\n✅ 結果を{output_dir}/stock_rankings.jsonに保存しました")
     
     # 結果をコンソールに表示
     print("\n" + "="*60)
@@ -310,8 +290,6 @@ def main():
     print("\n" + "="*60)
     print("🎯 実行完了！")
     print(f"📚 履歴データ: {len(history)}日分保存済み")
-    if TEST_MODE:
-        print("💡 本番実行時は TEST_MODE = False に変更してください")
     
     return final_result
 
