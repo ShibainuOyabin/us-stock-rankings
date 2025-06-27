@@ -1,6 +1,6 @@
 {
-  "generated_at": "2025-06-27 07:41:38 UTC",
-  "environment": "github_actions",
+  "generated_at": "2025-06-27 07:55:56 UTC",
+  "test_mode": false,
   "nasdaq100": null,
   "sp500": null
 }
