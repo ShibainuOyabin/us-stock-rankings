@@ -1,0 +1,82 @@
+name: Stock Rankings Update
+
+on:
+  schedule:
+    # 平日の日本時間18:00 (UTC 09:00)に実行
+    - cron: '0 9 * * 1-5'
+  workflow_dispatch:  # 手動実行も可能
+    inputs:
+      max_symbols:
+        description: '最大処理銘柄数'
+        required: false
+        default: '50'
+      process_sp500:
+        description: 'S&P500も処理する'
+        required: false
+        default: 'false'
+
+jobs:
+  update-rankings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30  # 30分でタイムアウト
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pandas yfinance numpy requests
+        
+    - name: Create data directory
+      run: mkdir -p data
+      
+    - name: Run stock ranking analysis
+      env:
+        GITHUB_ACTIONS: true
+        MAX_SYMBOLS: ${{ github.event.inputs.max_symbols || '50' }}
+        PROCESS_SP500: ${{ github.event.inputs.process_sp500 || 'false' }}
+        ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+      run: python stock_ranking.py
+      
+    - name: Upload results as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: stock-rankings-${{ github.run_number }}
+        path: data/
+        retention-days: 30
+        
+    - name: Commit and push results (optional)
+      if: github.event_name == 'schedule'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add data/stock_rankings.json
+        git diff --staged --quiet || git commit -m "Update stock rankings - $(date '+%Y-%m-%d %H:%M:%S')"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Create summary
+      if: always()
+      run: |
+        echo "## 📊 Stock Rankings Update Results" >> $GITHUB_STEP_SUMMARY
+        echo "- **Execution Time**: ${{ steps.run-analysis.outputs.execution_time || 'N/A' }} seconds" >> $GITHUB_STEP_SUMMARY
+        echo "- **NASDAQ Success**: ${{ steps.run-analysis.outputs.nasdaq_success || 'false' }}" >> $GITHUB_STEP_SUMMARY
+        if [ -f data/stock_rankings.json ]; then
+          echo "- **Output File**: ✅ Created successfully" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "- **Output File**: ❌ Failed to create" >> $GITHUB_STEP_SUMMARY
+        fi
