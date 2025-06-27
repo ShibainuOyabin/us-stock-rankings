@@ -50,36 +50,46 @@ def process_stock_data(symbols, index_name):
     print(f"\n{index_name} データ処理開始...")
     
     try:
-        # S&P500の場合は分割取得
-        if len(symbols) > 200:
-            print(f"大量データのため分割取得: {len(symbols)}銘柄")
-            all_data = []
-            batch_size = 100
+        # レート制限対策でNASDAQ100も分割取得
+        print(f"レート制限対策のため分割取得: {len(symbols)}銘柄")
+        all_data = []
+        batch_size = 20  # より小さなバッチサイズ
+        
+        for i in range(0, len(symbols), batch_size):
+            batch_symbols = symbols[i:i+batch_size]
+            print(f"バッチ {i//batch_size + 1}: {len(batch_symbols)}銘柄取得中...")
             
-            for i in range(0, len(symbols), batch_size):
-                batch_symbols = symbols[i:i+batch_size]
-                print(f"バッチ {i//batch_size + 1}: {len(batch_symbols)}銘柄取得中...")
+            try:
+                # より慎重な設定
+                batch_df = yf.download(
+                    batch_symbols, 
+                    start='2020-01-01', 
+                    auto_adjust=False,
+                    progress=False, 
+                    threads=False,  # マルチスレッド無効
+                    timeout=30
+                )['Close']
                 
-                try:
-                    batch_df = yf.download(batch_symbols, start='2020-01-01', auto_adjust=False, 
-                                         progress=False, threads=True)['Close']
-                    if not batch_df.empty:
-                        all_data.append(batch_df)
-                    time.sleep(1)  # レート制限対策
-                except Exception as e:
-                    print(f"バッチ {i//batch_size + 1} エラー: {e}")
-                    continue
-            
-            if all_data:
-                df = pd.concat(all_data, axis=1)
-                print(f"分割取得完了: {df.shape}")
-            else:
-                print("すべてのバッチが失敗")
-                return None
+                if not batch_df.empty:
+                    all_data.append(batch_df)
+                    print(f"✅ バッチ {i//batch_size + 1} 成功: {batch_df.shape}")
+                else:
+                    print(f"⚠️ バッチ {i//batch_size + 1} データなし")
+                
+                # より長い待機時間
+                time.sleep(3)
+                
+            except Exception as e:
+                print(f"❌ バッチ {i//batch_size + 1} エラー: {e}")
+                time.sleep(5)  # エラー時はより長く待機
+                continue
+        
+        if all_data:
+            df = pd.concat(all_data, axis=1)
+            print(f"分割取得完了: {df.shape}")
         else:
-            # NASDAQ100など少数の場合は通常取得
-            df = yf.download(symbols, start='2020-01-01', auto_adjust=False, progress=False)['Close']
-            print(f"一括取得完了: {df.shape}")
+            print("❌ すべてのバッチが失敗")
+            return None
         
         # データクリーニング
         original_count = len(df.columns) if len(df.shape) > 1 else 1
