@@ -19,6 +19,10 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+        clean: true  # 強制的にクリーンアップ
       
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -35,6 +39,29 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pandas yfinance numpy
+        
+    - name: Verify Python file content
+      run: |
+        echo "=== Checking stock_ranking.py imports ==="
+        head -20 stock_ranking.py
+        echo ""
+        echo "=== Searching for problematic import statements ==="
+        grep -n "^import os" stock_ranking.py && echo "❌ Found duplicate 'import os'" || echo "✅ No duplicate 'import os'"
+        grep -n "^import time" stock_ranking.py && echo "❌ Found duplicate 'import time'" || echo "✅ No duplicate 'import time'"
+        grep -n "import traceback" stock_ranking.py && echo "⚠️ Found 'import traceback'" || echo "✅ No duplicate 'import traceback'"
+        echo ""
+        echo "=== File size and last modified ==="
+        ls -la stock_ranking.py
+        
+    - name: Fix Python file if needed
+      run: |
+        # 重複するimport文を削除
+        sed -i '/^import os$/d' stock_ranking.py
+        sed -i '/^[[:space:]]*import time$/d' stock_ranking.py
+        sed -i '/^[[:space:]]*import traceback$/d' stock_ranking.py
+        
+        echo "=== After cleanup ==="
+        head -20 stock_ranking.py
         
     - name: Create data directory
       run: mkdir -p data
