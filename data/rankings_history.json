@@ -1,0 +1,25 @@
+{
+  "2025-06-29": {
+    "nasdaq100": {
+      "ultra_top_5": [
+        "TSLA",
+        "CRM",
+        "MSFT",
+        "AMZN",
+        "ADBE"
+      ],
+      "top_10": [
+        "AAPL",
+        "ADBE",
+        "AMZN",
+        "CRM",
+        "GOOGL",
+        "META",
+        "MSFT",
+        "NFLX",
+        "NVDA",
+        "TSLA"
+      ]
+    }
+  }
+}
