@@ -29,7 +29,15 @@ def get_nasdaq100_symbols():
     try:
         Symbol_df = pd.read_html("https://en.wikipedia.org/wiki/Nasdaq-100")[4]
         symbols = Symbol_df.Ticker.to_list()
-        print(f"NASDAQ100取得完了: {len(symbols)}銘柄")
+        
+        # GitHub Actions環境では銘柄数を制限
+        if os.getenv('GITHUB_ACTIONS'):
+            # 本番モードでもGitHub Actions環境では50銘柄に制限
+            symbols = symbols[:50]
+            print(f"GitHub Actions環境: NASDAQ100を{len(symbols)}銘柄に制限")
+        else:
+            print(f"NASDAQ100取得完了: {len(symbols)}銘柄")
+            
         return symbols, "NASDAQ-100"
     except Exception as e:
         print(f"NASDAQ100取得エラー: {e}")
@@ -71,9 +79,31 @@ def process_stock_data(symbols, index_name):
     print(f"\n{index_name} データ処理開始...")
     
     try:
-        # 株価データダウンロード
-        df = yf.download(symbols, start='2020-01-01', auto_adjust=False)['Close']
-        print(f"ダウンロード完了: {df.shape}")
+        # GitHub Actions環境での実行時間を考慮して、リトライ機能付きでダウンロード
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                print(f"データダウンロード試行 {attempt + 1}/{max_retries}...")
+                
+                # より短い期間でデータ取得（GitHub Actions用）
+                if os.getenv('GITHUB_ACTIONS'):
+                    start_date = '2022-01-01'  # 期間を短縮
+                    print(f"GitHub Actions環境: 期間を{start_date}からに短縮")
+                else:
+                    start_date = '2020-01-01'
+                
+                df = yf.download(symbols, start=start_date, auto_adjust=False, 
+                               progress=True, threads=True)['Close']
+                print(f"ダウンロード完了: {df.shape}")
+                break
+                
+            except Exception as download_error:
+                print(f"ダウンロード試行 {attempt + 1} 失敗: {download_error}")
+                if attempt == max_retries - 1:
+                    raise download_error
+                print(f"5秒待機後、再試行...")
+                import time
+                time.sleep(5)
         
         # データクリーニング
         original_count = len(df.columns) if len(df.shape) > 1 else 1
@@ -82,6 +112,14 @@ def process_stock_data(symbols, index_name):
         
         if dropped_count > 0:
             print(f"⚠️  {dropped_count}銘柄がデータ不足のため除外")
+        
+        # 残った銘柄数を確認
+        remaining_symbols = len(df.columns) if len(df.shape) > 1 else 1
+        if remaining_symbols < 5:
+            print(f"❌ 利用可能な銘柄数が少なすぎます: {remaining_symbols}銘柄")
+            return None
+            
+        print(f"✅ 処理可能な銘柄数: {remaining_symbols}銘柄")
         
         # 月次リターン計算
         try:
@@ -101,24 +139,43 @@ def process_stock_data(symbols, index_name):
         # 最新のデータがある日付を取得
         latest_date = mtl.index[-1]
         
-        # TOP10とTOP5を計算
+        # TOP10とTOP5を計算（利用可能な銘柄数に応じて調整）
         def get_top_stocks(date, ret_12, ret_6, ret_3, n_top=10):
             try:
-                top_50 = ret_12.loc[date].nlargest(50).index
-                top_30 = ret_6.loc[date, top_50].nlargest(30).index
-                top_stocks = ret_3.loc[date, top_30].nlargest(n_top).index
+                available_stocks = len(ret_12.loc[date].dropna())
+                if available_stocks < n_top:
+                    n_top = available_stocks
+                    print(f"⚠️ 利用可能銘柄数が少ないため、TOP{n_top}に調整")
+                
+                top_50 = min(50, available_stocks)
+                top_30 = min(30, available_stocks)
+                
+                top_50_stocks = ret_12.loc[date].nlargest(top_50).index
+                top_30_stocks = ret_6.loc[date, top_50_stocks].nlargest(top_30).index
+                top_stocks = ret_3.loc[date, top_30_stocks].nlargest(n_top).index
                 return top_stocks.tolist()
-            except:
+            except Exception as e:
+                print(f"TOP株選出エラー: {e}")
                 return []
         
         def get_ultra_top_stocks(date, ret_12, ret_6, ret_3, ret_1, n_top=5):
             try:
-                top_50 = ret_12.loc[date].nlargest(50).index
-                top_30 = ret_6.loc[date, top_50].nlargest(30).index
-                top_10 = ret_3.loc[date, top_30].nlargest(10).index
-                ultra_top = ret_1.loc[date, top_10].nlargest(n_top).index
+                available_stocks = len(ret_12.loc[date].dropna())
+                if available_stocks < n_top:
+                    n_top = available_stocks
+                    print(f"⚠️ 利用可能銘柄数が少ないため、ULTRA TOP{n_top}に調整")
+                
+                top_50 = min(50, available_stocks)
+                top_30 = min(30, available_stocks)
+                top_10 = min(10, available_stocks)
+                
+                top_50_stocks = ret_12.loc[date].nlargest(top_50).index
+                top_30_stocks = ret_6.loc[date, top_50_stocks].nlargest(top_30).index
+                top_10_stocks = ret_3.loc[date, top_30_stocks].nlargest(top_10).index
+                ultra_top = ret_1.loc[date, top_10_stocks].nlargest(n_top).index
                 return ultra_top.tolist()
-            except:
+            except Exception as e:
+                print(f"ULTRA TOP株選出エラー: {e}")
                 return []
         
         top_10 = get_top_stocks(latest_date, ret_12, ret_6, ret_3, 10)
@@ -133,10 +190,13 @@ def process_stock_data(symbols, index_name):
         }
         
         print(f"{index_name} 処理完了")
+        print(f"TOP10: {len(top_10)}銘柄, ULTRA TOP5: {len(ultra_top_5)}銘柄")
         return result
         
     except Exception as e:
         print(f"{index_name} 処理エラー: {e}")
+        import traceback
+        print(f"詳細エラー: {traceback.format_exc()}")
         return None
 
 def load_history():
@@ -292,6 +352,17 @@ def main():
     filename = "stock_rankings_nasdaq_only_test.json" if TEST_MODE else "stock_rankings_nasdaq_only.json"
     with open(f"{output_dir}/{filename}", "w", encoding="utf-8") as f:
         json.dump(final_result, f, indent=2, ensure_ascii=False)
+    
+    print(f"📁 ファイル保存完了: {output_dir}/{filename}")
+    
+    # ファイルが正常に作成されたか確認
+    import os
+    if os.path.exists(f"{output_dir}/{filename}"):
+        file_size = os.path.getsize(f"{output_dir}/{filename}")
+        print(f"✅ ファイル確認成功: {filename} ({file_size} bytes)")
+    else:
+        print(f"❌ ファイル作成失敗: {filename}")
+        print(f"📂 現在のディレクトリ内容: {os.listdir(output_dir)}")
     
     print(f"\n✅ 結果を{output_dir}/{filename}に保存しました")
     
