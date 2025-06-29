@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>米国株 TOP銘柄ランキング | NASDAQ100・S&P500 毎日更新 | stock-ranking.com</title>
-    <meta name="description" content="NASDAQ100とS&P500の優良銘柄ランキングを毎日更新。段階的フィルタリングで選出されたULTRA TOP5と過去30日の履歴を公開。">
-    <meta name="keywords" content="米国株,ランキング,NASDAQ100,S&P500,株価,銘柄,投資,TOP5,ULTRA,履歴,銘柄選択,投資判断,アルゴリズム,データ分析,株式投資,資産運用,投資情報">
+    <title>米国株 TOP銘柄ランキング | NASDAQ100 毎日更新 | stock-ranking.com</title>
+    <meta name="description" content="NASDAQ100の優良銘柄ランキングを毎日更新。段階的フィルタリングで選出されたULTRA TOP5と過去30日の履歴を公開。">
+    <meta name="keywords" content="米国株,ランキング,NASDAQ100,株価,銘柄,投資,TOP5,ULTRA,履歴,銘柄選択,投資判断,アルゴリズム,データ分析,株式投資,資産運用,投資情報">
     <meta name="author" content="シバイヌおやびん">
     <meta name="robots" content="index, follow">
     <meta property="og:title" content="米国株 TOP銘柄ランキング | stock-ranking.com">
-    <meta property="og:description" content="NASDAQ100とS&P500の優良銘柄ランキングを毎日更新。段階的フィルタリングで選出されたULTRA TOP5と過去30日の履歴を公開。">
+    <meta property="og:description" content="NASDAQ100の優良銘柄ランキングを毎日更新。段階的フィルタリングで選出されたULTRA TOP5と過去30日の履歴を公開。">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://stock-ranking.com">
     <meta property="og:site_name" content="stock-ranking.com">
     <meta property="og:image" content="https://stock-ranking.com/og-image.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="米国株 TOP銘柄ランキング | stock-ranking.com">
-    <meta name="twitter:description" content="NASDAQ100とS&P500の優良銘柄ランキングを毎日更新。段階的フィルタリングで選出されたULTRA TOP5と過去30日の履歴を公開。">
+    <meta name="twitter:description" content="NASDAQ100の優良銘柄ランキングを毎日更新。段階的フィルタリングで選出されたULTRA TOP5と過去30日の履歴を公開。">
     <meta name="twitter:creator" content="@yasutaketin">
     <meta name="twitter:image" content="https://stock-ranking.com/og-image.png">
     <link rel="canonical" href="https://stock-ranking.com">
@@ -47,7 +47,7 @@
       "@context": "https://schema.org",
       "@type": "WebSite",
       "name": "stock-ranking.com",
-      "description": "米国株TOP銘柄ランキング - NASDAQ100とS&P500の優良銘柄を毎日更新",
+      "description": "米国株TOP銘柄ランキング - NASDAQ100の優良銘柄を毎日更新",
       "url": "https://stock-ranking.com",
       "author": {
         "@type": "Person",
@@ -61,8 +61,8 @@
       "mainEntity": {
         "@type": "Dataset",
         "name": "米国株TOP銘柄ランキング",
-        "description": "NASDAQ100とS&P500の段階的フィルタリングによる優良銘柄ランキング",
-        "keywords": "米国株,NASDAQ100,S&P500,銘柄ランキング,投資",
+        "description": "NASDAQ100の段階的フィルタリングによる優良銘柄ランキング",
+        "keywords": "米国株,NASDAQ100,銘柄ランキング,投資",
         "temporalCoverage": "毎日更新",
         "spatial": "アメリカ合衆国証券市場"
       }
@@ -361,18 +361,12 @@
             color: #ffffff;
         }
 
-        /* Main Grid */
+        /* Main Grid - 軽量化版は1カラムレイアウト */
         .main-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             gap: 30px;
             margin-bottom: 40px;
-        }
-
-        @media (max-width: 1024px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
         }
 
         /* モバイル最適化 */
@@ -977,7 +971,8 @@
                     </div>
                 </section>
 
-                <!-- S&P 500 Section -->
+                <!-- S&P 500 Section をコメントアウト -->
+                <!--
                 <section class="index-section" aria-labelledby="sp500-title">
                     <div class="index-header">
                         <div class="index-indicator sp500-indicator"></div>
@@ -992,7 +987,6 @@
                                 <div>Symbol</div>
                             </div>
                             <div id="sp500-ultra-top5" role="list" aria-label="S&P500 ULTRA TOP5ランキング">
-                                <!-- ローディング状態 -->
                                 <div class="loading-skeleton">
                                     <div class="skeleton-item"></div>
                                     <div class="skeleton-item"></div>
@@ -1012,7 +1006,6 @@
                                 <div>Symbol</div>
                             </div>
                             <div id="sp500-top10" role="list" aria-label="S&P500 TOP10ランキング">
-                                <!-- ローディング状態 -->
                                 <div class="loading-skeleton">
                                     <div class="skeleton-item"></div>
                                     <div class="skeleton-item"></div>
@@ -1024,6 +1017,7 @@
                         </div>
                     </div>
                 </section>
+                -->
             </div>
         </main>
 
@@ -1166,8 +1160,8 @@
             try {
                 console.log('JSONファイルを読み込み中...');
                 
-                // 現在のランキングデータを読み込み
-                const filenames = ['data/stock_rankings.json', 'data/stock_rankings_test.json'];
+                // 現在のランキングデータを読み込み（軽量化版ファイル名に対応）
+                const filenames = ['data/stock_rankings_nasdaq_only.json', 'data/stock_rankings_nasdaq_only_test.json'];
                 
                 for (let filename of filenames) {
                     try {
@@ -1240,13 +1234,13 @@
                 updateRankingTable('nasdaq-ultra-top5', stockData.nasdaq100.ultra_top_5, true);
             }
 
-            // S&P 500のデータを更新
-            if (stockData.sp500) {
-                updateRankingTable('sp500-top10', stockData.sp500.top_10);
-                updateRankingTable('sp500-ultra-top5', stockData.sp500.ultra_top_5, true);
-            }
+            // S&P 500のデータ更新処理をコメントアウト
+            // if (stockData.sp500) {
+            //     updateRankingTable('sp500-top10', stockData.sp500.top_10);
+            //     updateRankingTable('sp500-ultra-top5', stockData.sp500.ultra_top_5, true);
+            // }
 
-            console.log('表示更新完了');
+            console.log('表示更新完了（NASDAQ-100のみ）');
         }
 
         // ランキングテーブル更新関数
@@ -1320,7 +1314,7 @@
             return row;
         }
 
-        // 履歴表示関数
+        // 履歴表示関数（NASDAQ-100のみ）
         function showHistory() {
             if (!historyData) {
                 alert('履歴データが利用できません。数日後に再度お試しください。');
@@ -1352,14 +1346,16 @@
                             ${dayData.nasdaq100 ? dayData.nasdaq100.ultra_top_5.map((symbol, i) => 
                                 `<span class="rank">${i+1}.</span><span class="symbol">${symbol}</span>`
                             ).join('<br>') : 'データなし'}
-                            <br><br>
-                            <strong>S&P500 TOP5:</strong><br>
-                            ${dayData.sp500 ? dayData.sp500.ultra_top_5.map((symbol, i) => 
-                                `<span class="rank">${i+1}.</span><span class="symbol">${symbol}</span>`
-                            ).join('<br>') : 'データなし'}
                         </div>
                     </div>
                 `;
+                
+                // S&P500の履歴表示をコメントアウト
+                // <br><br>
+                // <strong>S&P500 TOP5:</strong><br>
+                // ${dayData.sp500 ? dayData.sp500.ultra_top_5.map((symbol, i) => 
+                //     `<span class="rank">${i+1}.</span><span class="symbol">${symbol}</span>`
+                // ).join('<br>') : 'データなし'}
             });
             
             historyHtml += '</div>';
@@ -1389,7 +1385,7 @@
 
         // DOM読み込み完了時にデータ読み込みを開始
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('US Stock Rankings サイトが読み込まれました');
+            console.log('US Stock Rankings サイトが読み込まれました（NASDAQ-100のみ）');
             
             // 2秒後にJSONファイルを読み込み
             setTimeout(() => {
@@ -1400,7 +1396,7 @@
         // X共有機能
         function shareToX() {
             const url = 'https://stock-ranking.com';
-            const text = '米国株 TOP銘柄ランキング\nNQ100・S&P500の上昇銘柄を段階的フィルタリングで毎日更新';
+            const text = '米国株 TOP銘柄ランキング（NASDAQ-100版）\nNQ100の上昇銘柄を段階的フィルタリングで毎日更新';
             
             const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
             
