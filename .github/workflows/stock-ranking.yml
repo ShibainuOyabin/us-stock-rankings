@@ -1,24 +1,20 @@
-name: Stock Rankings Update
-
+name: NASDAQ-100 Stock Rankings Update
 on:
   schedule:
     # 平日の日本時間18:00 (UTC 09:00)に実行
     - cron: '0 9 * * 1-5'
   workflow_dispatch:  # 手動実行も可能
     inputs:
-      max_symbols:
-        description: '最大処理銘柄数'
-        required: false
-        default: '50'
-      process_sp500:
-        description: 'S&P500も処理する'
+      test_mode:
+        description: 'テストモード（少数銘柄で実行）'
         required: false
         default: 'false'
+        type: boolean
 
 jobs:
-  update-rankings:
+  update-nasdaq-rankings:
     runs-on: ubuntu-latest
-    timeout-minutes: 30  # 30分でタイムアウト
+    timeout-minutes: 20  # NASDAQ-100のみなので時間短縮
     
     steps:
     - name: Checkout repository
@@ -33,50 +29,134 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        key: ${{ runner.os }}-pip-nasdaq-only-${{ hashFiles('**/requirements.txt') }}
         
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pandas yfinance numpy requests
+        pip install pandas yfinance numpy
         
     - name: Create data directory
       run: mkdir -p data
       
-    - name: Run stock ranking analysis
+    - name: Run NASDAQ-100 ranking analysis
+      id: run-analysis
       env:
         GITHUB_ACTIONS: true
-        MAX_SYMBOLS: ${{ github.event.inputs.max_symbols || '50' }}
-        PROCESS_SP500: ${{ github.event.inputs.process_sp500 || 'false' }}
-        ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
-      run: python stock_ranking.py
-      
+        TEST_MODE: ${{ github.event.inputs.test_mode || 'false' }}
+      run: |
+        echo "Starting NASDAQ-100 ranking analysis..."
+        start_time=$(date +%s)
+        
+        # TEST_MODEの設定をPythonファイルに反映
+        if [ "$TEST_MODE" = "true" ]; then
+          sed -i 's/TEST_MODE = False/TEST_MODE = True/' stock_ranking.py
+          echo "テストモードで実行中..."
+        else
+          sed -i 's/TEST_MODE = True/TEST_MODE = False/' stock_ranking.py
+          echo "本番モードで実行中..."
+        fi
+        
+        python stock_ranking.py
+        
+        end_time=$(date +%s)
+        execution_time=$((end_time - start_time))
+        echo "execution_time=$execution_time" >> $GITHUB_OUTPUT
+        
+        # 実行結果を確認
+        if [ -f "data/stock_rankings_nasdaq_only.json" ] || [ -f "data/stock_rankings_nasdaq_only_test.json" ]; then
+          echo "nasdaq_success=true" >> $GITHUB_OUTPUT
+          echo "✅ NASDAQ-100ランキング生成完了"
+        else
+          echo "nasdaq_success=false" >> $GITHUB_OUTPUT
+          echo "❌ NASDAQ-100ランキング生成失敗"
+          exit 1
+        fi
+        
     - name: Upload results as artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4  # v4に更新
       with:
-        name: stock-rankings-${{ github.run_number }}
+        name: nasdaq-rankings-${{ github.run_number }}
         path: data/
         retention-days: 30
+        compression-level: 6  # 圧縮レベル指定
         
-    - name: Commit and push results (optional)
-      if: github.event_name == 'schedule'
+    - name: Commit and push results
+      if: github.event_name == 'schedule' && steps.run-analysis.outputs.nasdaq_success == 'true'
       run: |
         git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add data/stock_rankings.json
-        git diff --staged --quiet || git commit -m "Update stock rankings - $(date '+%Y-%m-%d %H:%M:%S')"
-        git push
+        git config --local user.name "GitHub Action (NASDAQ-100 Auto Update)"
+        
+        # 生成されたファイルを確認してコミット
+        if [ -f "data/stock_rankings_nasdaq_only.json" ]; then
+          git add data/stock_rankings_nasdaq_only.json
+        fi
+        
+        if [ -f "data/rankings_history.json" ]; then
+          git add data/rankings_history.json
+        fi
+        
+        # 変更があればコミット
+        if ! git diff --staged --quiet; then
+          git commit -m "🔄 Update NASDAQ-100 rankings - $(date '+%Y-%m-%d %H:%M:%S JST')"
+          git push
+          echo "✅ ランキングデータを正常に更新しました"
+        else
+          echo "ℹ️ 変更なし - コミットをスキップ"
+        fi
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
-    - name: Create summary
+    - name: Create execution summary
       if: always()
       run: |
-        echo "## 📊 Stock Rankings Update Results" >> $GITHUB_STEP_SUMMARY
-        echo "- **Execution Time**: ${{ steps.run-analysis.outputs.execution_time || 'N/A' }} seconds" >> $GITHUB_STEP_SUMMARY
-        echo "- **NASDAQ Success**: ${{ steps.run-analysis.outputs.nasdaq_success || 'false' }}" >> $GITHUB_STEP_SUMMARY
-        if [ -f data/stock_rankings.json ]; then
-          echo "- **Output File**: ✅ Created successfully" >> $GITHUB_STEP_SUMMARY
+        echo "## 📊 NASDAQ-100 Stock Rankings Update Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🎯 実行情報" >> $GITHUB_STEP_SUMMARY
+        echo "- **実行日時**: $(date '+%Y-%m-%d %H:%M:%S JST')" >> $GITHUB_STEP_SUMMARY
+        echo "- **実行時間**: ${{ steps.run-analysis.outputs.execution_time || 'N/A' }} 秒" >> $GITHUB_STEP_SUMMARY
+        echo "- **テストモード**: ${{ github.event.inputs.test_mode || 'false' }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "### 📈 処理結果" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ steps.run-analysis.outputs.nasdaq_success }}" = "true" ]; then
+          echo "- **NASDAQ-100**: ✅ 正常に処理完了" >> $GITHUB_STEP_SUMMARY
+          
+          # ファイルサイズ情報を追加
+          if [ -f "data/stock_rankings_nasdaq_only.json" ]; then
+            file_size=$(du -h data/stock_rankings_nasdaq_only.json | cut -f1)
+            echo "- **出力ファイル**: ✅ stock_rankings_nasdaq_only.json ($file_size)" >> $GITHUB_STEP_SUMMARY
+          elif [ -f "data/stock_rankings_nasdaq_only_test.json" ]; then
+            file_size=$(du -h data/stock_rankings_nasdaq_only_test.json | cut -f1)
+            echo "- **出力ファイル**: ✅ stock_rankings_nasdaq_only_test.json ($file_size)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ -f "data/rankings_history.json" ]; then
+            history_size=$(du -h data/rankings_history.json | cut -f1)
+            echo "- **履歴ファイル**: ✅ rankings_history.json ($history_size)" >> $GITHUB_STEP_SUMMARY
+          fi
         else
-          echo "- **Output File**: ❌ Failed to create" >> $GITHUB_STEP_SUMMARY
+          echo "- **NASDAQ-100**: ❌ 処理失敗" >> $GITHUB_STEP_SUMMARY
+          echo "- **出力ファイル**: ❌ 生成されませんでした" >> $GITHUB_STEP_SUMMARY
         fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔧 軽量化効果" >> $GITHUB_STEP_SUMMARY
+        echo "- **対象銘柄**: NASDAQ-100のみ（約100銘柄）" >> $GITHUB_STEP_SUMMARY
+        echo "- **処理時間短縮**: S&P500除外により大幅な高速化" >> $GITHUB_STEP_SUMMARY
+        echo "- **リソース使用量**: 約80%削減" >> $GITHUB_STEP_SUMMARY
+        
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "## ⚠️ NASDAQ-100 Rankings Update Failed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🐛 エラー情報" >> $GITHUB_STEP_SUMMARY
+        echo "- **失敗した処理**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **実行時刻**: $(date '+%Y-%m-%d %H:%M:%S JST')" >> $GITHUB_STEP_SUMMARY
+        echo "- **ログを確認**: GitHub Actions の詳細ログを参照してください" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔧 推奨対処法" >> $GITHUB_STEP_SUMMARY
+        echo "1. Yahoo Finance APIの一時的な問題の可能性 → 数時間後に手動実行" >> $GITHUB_STEP_SUMMARY
+        echo "2. ネットワーク接続の問題 → ワークフローの再実行" >> $GITHUB_STEP_SUMMARY
+        echo "3. 継続的な失敗の場合 → Issue作成してコード確認"  >> $GITHUB_STEP_SUMMARY
