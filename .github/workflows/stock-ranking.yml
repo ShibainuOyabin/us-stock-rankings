@@ -46,18 +46,44 @@ jobs:
         TEST_MODE: ${{ github.event.inputs.test_mode || 'false' }}
       run: |
         echo "Starting NASDAQ-100 ranking analysis..."
+        echo "Current directory: $(pwd)"
+        echo "TEST_MODE: $TEST_MODE"
         start_time=$(date +%s)
+        
+        # 現在のTEST_MODE設定を確認
+        echo "=== Python file TEST_MODE before modification ==="
+        grep -n "TEST_MODE" stock_ranking.py || echo "TEST_MODE not found"
         
         # TEST_MODEの設定をPythonファイルに反映
         if [ "$TEST_MODE" = "true" ]; then
           sed -i 's/TEST_MODE = False/TEST_MODE = True/' stock_ranking.py
-          echo "テストモードで実行中..."
+          echo "✅ テストモードで実行中..."
         else
           sed -i 's/TEST_MODE = True/TEST_MODE = False/' stock_ranking.py
-          echo "本番モードで実行中..."
+          echo "✅ 本番モードで実行中..."
         fi
         
+        # 修正後のTEST_MODE設定を確認
+        echo "=== Python file TEST_MODE after modification ==="
+        grep -n "TEST_MODE" stock_ranking.py || echo "TEST_MODE not found"
+        
+        # dataディレクトリの状態確認
+        echo "=== Data directory before execution ==="
+        ls -la data/ || echo "Data directory is empty or doesn't exist"
+        
+        # Python実行
+        echo "=== Starting Python execution ==="
         python stock_ranking.py
+        python_exit_code=$?
+        echo "Python exit code: $python_exit_code"
+        
+        # dataディレクトリの状態確認（実行後）
+        echo "=== Data directory after execution ==="
+        ls -la data/
+        
+        # カレントディレクトリも確認
+        echo "=== Current directory contents ==="
+        find . -name "*.json" -type f | head -10
         
         end_time=$(date +%s)
         execution_time=$((end_time - start_time))
@@ -67,9 +93,29 @@ jobs:
         if [ -f "data/stock_rankings_nasdaq_only.json" ] || [ -f "data/stock_rankings_nasdaq_only_test.json" ]; then
           echo "nasdaq_success=true" >> $GITHUB_OUTPUT
           echo "✅ NASDAQ-100ランキング生成完了"
+          
+          # ファイル内容も確認
+          if [ -f "data/stock_rankings_nasdaq_only.json" ]; then
+            echo "=== Content preview: stock_rankings_nasdaq_only.json ==="
+            head -20 "data/stock_rankings_nasdaq_only.json"
+          fi
+          
+          if [ -f "data/stock_rankings_nasdaq_only_test.json" ]; then
+            echo "=== Content preview: stock_rankings_nasdaq_only_test.json ==="
+            head -20 "data/stock_rankings_nasdaq_only_test.json"
+          fi
         else
           echo "nasdaq_success=false" >> $GITHUB_OUTPUT
           echo "❌ NASDAQ-100ランキング生成失敗"
+          
+          # エラー詳細調査
+          echo "=== Error Investigation ==="
+          echo "Python exit code: $python_exit_code"
+          echo "Files in data directory:"
+          ls -la data/ || echo "No data directory"
+          echo "All JSON files in workspace:"
+          find . -name "*.json" -type f || echo "No JSON files found"
+          
           exit 1
         fi
         
