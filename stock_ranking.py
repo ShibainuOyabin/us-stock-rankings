@@ -11,8 +11,10 @@ import pandas as pd
 import yfinance as yf
 import numpy as np
 import json
-from datetime import datetime, timedelta
 import os
+import time
+import traceback
+from datetime import datetime, timedelta
 from collections import OrderedDict
 
 # テスト実行用フラグ
@@ -102,7 +104,6 @@ def process_stock_data(symbols, index_name):
                 if attempt == max_retries - 1:
                     raise download_error
                 print(f"5秒待機後、再試行...")
-                import time
                 time.sleep(5)
         
         # データクリーニング
@@ -195,7 +196,6 @@ def process_stock_data(symbols, index_name):
         
     except Exception as e:
         print(f"{index_name} 処理エラー: {e}")
-        import traceback
         print(f"詳細エラー: {traceback.format_exc()}")
         return None
 
@@ -318,6 +318,8 @@ def main():
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
         print(f"📁 {output_dir}ディレクトリを作成しました")
+    else:
+        print(f"📁 {output_dir}ディレクトリは既に存在します")
     
     # 履歴データを読み込み
     history = load_history()
