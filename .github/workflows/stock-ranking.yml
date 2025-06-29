@@ -52,7 +52,7 @@ jobs:
         
         # 現在のTEST_MODE設定を確認
         echo "=== Python file TEST_MODE before modification ==="
-        grep -n "TEST_MODE" stock_ranking.py || echo "TEST_MODE not found"
+        grep -n "TEST_MODE" stock_ranking.py
         
         # TEST_MODEの設定をPythonファイルに反映
         if [ "$TEST_MODE" = "true" ]; then
@@ -65,7 +65,11 @@ jobs:
         
         # 修正後のTEST_MODE設定を確認
         echo "=== Python file TEST_MODE after modification ==="
-        grep -n "TEST_MODE" stock_ranking.py || echo "TEST_MODE not found"
+        grep -n "TEST_MODE" stock_ranking.py
+        
+        # ファイル名生成部分も確認
+        echo "=== Filename generation logic ==="
+        grep -n -A2 -B2 "filename.*json" stock_ranking.py
         
         # dataディレクトリの状態確認
         echo "=== Data directory before execution ==="
@@ -104,6 +108,21 @@ jobs:
             echo "=== Content preview: stock_rankings_nasdaq_only_test.json ==="
             head -20 "data/stock_rankings_nasdaq_only_test.json"
           fi
+        elif [ -f "data/stock_rankings.json" ] || [ -f "data/stock_rankings_test.json" ]; then
+          echo "⚠️ 古いファイル名で生成されています"
+          echo "nasdaq_success=true" >> $GITHUB_OUTPUT
+          echo "🔄 古いファイル名で生成: stock_rankings.json"
+          
+          # 古いファイルの内容確認
+          if [ -f "data/stock_rankings.json" ]; then
+            echo "=== Content preview: stock_rankings.json (OLD FORMAT) ==="
+            head -20 "data/stock_rankings.json"
+          fi
+          
+          if [ -f "data/stock_rankings_test.json" ]; then
+            echo "=== Content preview: stock_rankings_test.json (OLD FORMAT) ==="
+            head -20 "data/stock_rankings_test.json"
+          fi
         else
           echo "nasdaq_success=false" >> $GITHUB_OUTPUT
           echo "❌ NASDAQ-100ランキング生成失敗"
@@ -128,7 +147,7 @@ jobs:
         compression-level: 6  # 圧縮レベル指定
         
     - name: Commit and push results
-      if: github.event_name == 'schedule' && steps.run-analysis.outputs.nasdaq_success == 'true'
+      if: steps.run-analysis.outputs.nasdaq_success == 'true'
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action (NASDAQ-100 Auto Update)"
@@ -136,15 +155,28 @@ jobs:
         # 生成されたファイルを確認してコミット
         if [ -f "data/stock_rankings_nasdaq_only.json" ]; then
           git add data/stock_rankings_nasdaq_only.json
+          echo "✅ 本番ファイルを追加: stock_rankings_nasdaq_only.json"
+        fi
+        
+        if [ -f "data/stock_rankings_nasdaq_only_test.json" ]; then
+          git add data/stock_rankings_nasdaq_only_test.json
+          echo "✅ テストファイルを追加: stock_rankings_nasdaq_only_test.json"
         fi
         
         if [ -f "data/rankings_history.json" ]; then
           git add data/rankings_history.json
+          echo "✅ 履歴ファイルを追加: rankings_history.json"
         fi
         
         # 変更があればコミット
         if ! git diff --staged --quiet; then
-          git commit -m "🔄 Update NASDAQ-100 rankings - $(date '+%Y-%m-%d %H:%M:%S JST')"
+          commit_msg="🔄 Update NASDAQ-100 rankings"
+          if [ "${{ github.event.inputs.test_mode }}" = "true" ]; then
+            commit_msg="$commit_msg (Test Mode)"
+          fi
+          commit_msg="$commit_msg - $(date '+%Y-%m-%d %H:%M:%S JST')"
+          
+          git commit -m "$commit_msg"
           git push
           echo "✅ ランキングデータを正常に更新しました"
         else
